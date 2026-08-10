@@ -5,6 +5,7 @@
 .harness/
 .coldstart/
 .coldstart-ws/
+.tools/
 
 # Python
 __pycache__/

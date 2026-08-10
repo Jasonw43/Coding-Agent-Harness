@@ -77,3 +77,6 @@
 
 ### T011 · T05 命令护栏（已合并）
 - 内容：`src/cah/guardrails/command.py`（CommandGuardrail：shlex 归一化、deny 子串 → BLOCKED、allow 前缀 → SAFE、其余 REQUIRE_APPROVAL、非 shell SAFE）+ `tests/test_guardrails.py` 3 例；提交 `4b99eea`，全量 15/15 绿；合并 main 并删除分支。
+
+### T012 · T06 路径护栏（已合并）
+- 内容：`src/cah/guardrails/path.py`（PathGuardrail：`read_file/write_file` 动作将 `(workspace / path).resolve()` 与 `workspace.resolve()` 前缀比对，逃逸 → BLOCKED，缺少 workspace/path → BLOCKED，非文件动作 SAFE）+ `tests/test_guardrails.py` 新增 2 例（workspace 内 SAFE、`../` 逃逸 BLOCKED）；提交 `91bbe3e`，全量 17/17 绿；fast-forward 合并 main 并删除分支。

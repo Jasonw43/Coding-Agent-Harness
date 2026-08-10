@@ -1,0 +1,15 @@
+image: python:3.12
+
+stages:
+  - test
+
+unit-test:
+  stage: test
+  script:
+    - pip install -e ".[dev]"
+    - pytest
+    - pip install build
+    - python -m build
+  artifacts:
+    paths:
+      - dist/

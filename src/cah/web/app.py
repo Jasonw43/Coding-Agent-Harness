@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import threading
 import time
 from pathlib import Path
@@ -167,3 +168,9 @@ def create_app(store_dir: str | Path, demo: bool = True) -> FastAPI:
         return JSONResponse({"run_id": run_id}, status_code=202)
 
     return app
+
+
+app = create_app(
+    store_dir=os.environ.get("CAH_STORE_DIR", ".harness-web"),
+    demo=os.environ.get("HARNESS_DEMO", "1") == "1",
+)

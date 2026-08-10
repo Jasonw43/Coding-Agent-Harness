@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 .harness/
+.harness-web/
 .coldstart/
 .coldstart-ws/
 .tools/

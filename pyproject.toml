@@ -24,7 +24,7 @@ dev = [
 cah = "cah.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/cah"]
+packages = ["src/cah", "demo"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

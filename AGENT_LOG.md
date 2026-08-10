@@ -93,3 +93,22 @@
 ### T015 · T08 HITL 审批状态机（内联 TDD）
 - 技能：test-driven-development（内联执行）。
 - 内容：新增 4 个红测（全转移 + 幂等、拒绝 + 超时、错误 token 拒绝、跨实例持久化）→ 收集错误复现 → 实现 `hitl/state_machine.py`（ApprovalState 枚举、token 一次性 + SHA-256 存储 + `secrets.compare_digest`、`resolve_expired()` fail-safe、JSON 原子写：临时文件 + `os.replace`、损坏备份）→ 全量 26/26 绿；提交 `e295170`。
+
+### T016–T024 · T09–T20 实现记录（内联 TDD）
+- 技能：test-driven-development（内联执行）。
+- T09 工具沙箱与注册表：`actions/{sandbox,registry,tools}.py`；首提提交含一个红测（注册表未自动挂载工具），随后的 fix 提交 `f406664` 修正；跨平台 shell 测试命令由 `pwd` 适配为 `python -c "import os;print(os.getcwd())"`。
+- T10 记忆存储：`memory/store.py`（同 key 覆盖、标签/关键词召回、损坏备份），提交 `5331276`。
+- T11 反馈校验器：`feedback/validators.py`（TestRunnerValidator 解析退出码/失败行；`__test__=False` 防 pytest 误收集），提交 `bd2ba95`。
+- T12 凭据管理：`credentials/manager.py`（keyring 优先 + env/.env 兜底、掩码状态、clear），提交 `9c7cfcb`。
+- T13 主循环：`loop/agent.py`（上下文组装→LLM→护栏→HITL→工具→校验→回灌→停机；反馈收敛语义：上次失败本次通过→done，脚本耗尽→failed，max_steps 硬上限），提交 `0fdf238`；实现中发现并修正了重试计数 bug。
+- T14 CLI + DeepSeek 客户端：`cli.py` + `llm/deepseek.py`；修正 PLAN 测试缺陷（run/key/config 裸解析缺必填参数）；`cah run --mock` 冒烟通过，提交 `b2ccf78`。
+- T15 Web 审批台：`web/app.py` + 单页 UI；测试驱动发现并修复 **HITL 跨实例状态陈旧读** bug（demo 解析器每轮从磁盘重读审批状态），提交 `a726851`。
+- T16 机制演示：`demo/mechanism_demo.py` 三个必需行为全部复现（退出码 0），提交 `9587a8d`。
+- T17–T20 交付：README（课程必需章节）、GitHub Actions + `.gitlab-ci.yml`（unit-test job）、`render.yaml`、wheel 打包（`cah-0.1.0`，干净临时环境冒烟通过；C 盘满 → D 盘 `.tools` 下验证），提交 `6f1dd30`。
+- 全量测试：52/52 绿。
+
+### T025 · 真实问答演示发现并修复两处缺陷 + C 盘清理
+- 内容：演示 `cah run`（真实 DeepSeek）时发现：① 模型直接返回答案时文本被丢弃（`final_output` 为空）——`loop/agent.py` 在 done 分支未捕获 `response.text`，补红测后修复；② 无 `harness.toml` 时默认模型为 `"mock"`，真实模式会把 `mock` 当模型名调用 API——`cli.py` 回退为 `deepseek-chat`。
+- 环境事件：C 盘完全占满（0 GB）导致沙箱工具无法运行，经用户授权清理 npm/pip 缓存与 Temp（约 4.4 GB）后恢复。
+- 验证：52/52 测试绿；`cah run "用一句话解释Python装饰器"` 返回完整答案（控制台乱码为 PowerShell 编码显示问题，数据本身 UTF-8 正常）。
+- 教训：真实链路演示是发现"mock 全绿但真实不可用"类缺陷的最快方式；C 盘满会连带瘫痪开发工具链，须及时清理缓存。

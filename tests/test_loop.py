@@ -43,7 +43,7 @@ def test_loop_runs_to_done(tmp_path):
         ],
     )
     r = loop.run("task")
-    assert r.status == "done"
+    assert r.status == "done" and r.final_output == "done"
 
 
 def test_loop_blocks_dangerous_action(tmp_path):

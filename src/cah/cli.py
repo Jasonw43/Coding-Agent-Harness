@@ -111,7 +111,8 @@ def _cmd_run(args: argparse.Namespace) -> int:
         if not key:
             print("error: no API key configured; run `cah key set` first", file=sys.stderr)
             return 2
-        llm = DeepSeekLLM(api_key=key, model=config.model)
+        model = config.model if config.model != "mock" else "deepseek-chat"
+        llm = DeepSeekLLM(api_key=key, model=model)
 
     resolver = (lambda i, t: "approved") if args.auto_approve else (lambda i, t: "rejected")
     loop = AgentLoop(

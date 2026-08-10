@@ -84,6 +84,7 @@ class AgentLoop:
         retries = 0
         prev_ok: bool | None = None
         status = "failed"
+        final_text = ""
 
         for step in range(1, self.max_steps + 1):
             context = self._build_context(task, event_texts)
@@ -96,6 +97,7 @@ class AgentLoop:
                 break
 
             if response.done or response.action is None:
+                final_text = response.text
                 fb = self._validate()
                 if fb is None or fb.ok:
                     status = "done"
@@ -174,7 +176,7 @@ class AgentLoop:
             status=status,
             steps=len(events),
             actions_log=events,
-            final_output=event_texts[-1] if event_texts else "",
+            final_output=final_text or (event_texts[-1] if event_texts else ""),
         )
 
     # ---- helpers ----

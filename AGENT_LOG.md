@@ -18,6 +18,7 @@
   4. 分发 = **PyPI 包**（本机无 Docker）。
   5. 部署 = **Render**（注册流程已提供；账号尚未注册完成）。
   6. 架构 = **分层内核 + 薄 Web 壳**（10 个模块：llm/loop/actions/guardrails/feedback/memory/config/cli/web/credentials）。
+- 用户主动提出的问题（均真实发生并影响决策）：开工前问"5 天来得及吗"→ 推动压缩范围并给出 5 天作战计划；问"能不能用 Python 3.14"→ 版本策略改为验证驱动；问"SPEC_PROCESS 是现在写还是后面写"→ 确认其为边做边写的过程文档。
 - 人工干预：用户对每节设计逐一确认（"可以/没问题/ok"）；纠正过一次流程预期（询问"是否已开启 brainstorm 模式"）。
 - 产出：`SPEC.md`（本仓库根目录，含 §11 领域与机制设计）。
 - 教训：用户对技术方案信任度高的场景，把决策收敛为"推荐 + 理由 + 待确认"，推进效率最高；但账号类外部依赖（Render）仍需用户亲自完成。
@@ -47,11 +48,13 @@
 ### T005 · 环境修复：Claude Code（C 盘爆满 + 安装不完整）
 - 技能：无（环境）。
 - 问题链：Claude Code 原生二进制包缺失（npm 安装不完整，根因 C 盘已满 ENOSPC）→ 重装修复被 ENOSPC 挡住 → 将 npm 全局目录/缓存/临时目录全部迁到 D 盘工作区 `.tools` → 用国内镜像安装 `@anthropic-ai/claude-code-win32-x64@2.1.226` → 将真实 `claude.exe`（287 MB）复制替换占位脚本 → `claude.cmd --version` 正常。
+- 人工干预与用户约束：用户**坚持使用 Claude Code** 作为第二 agent（AI 曾建议改用已可用的 OpenCode 兜底，被用户否决）；用户提出"C 盘满了，修复会不会占 C 盘"的顾虑 → 安装全程迁到 D 盘；用户追问"为什么我的 Claude Code 用不了""为什么这么慢"→ 定位到安装不完整与 npm 源慢两个根因，换国内镜像 + 后台日志方案。
 - 关键坑：Start-Process 在该环境报 PATH/PATH 重复键（提权环境无此问题）；沙箱内启动 claude 无网络（ConnectionRefused），必须提权启动；无头模式默认无写权限，需 `--permission-mode bypassPermissions`。
 - 教训：C 盘空间问题是系统性根因，所有写 C 盘的安装都可能静默失败；环境问题要记录为过程证据而非归咎 spec。
 
 ### T006 · 冷启动验证完成（Claude Code）
 - 技能：无（§4.5 冷启动流程）。
 - 内容：Claude Code 无头模式在隔离仓库（仅 SPEC+PLAN）实现 Task 5/8：提交 `901c002`/`32ef984`/`8635c5f`，10 测试全绿（主 agent 独立复验）。暂停点：git safe.directory、无头权限门（均环境问题）；发现计划 `requires-python <3.14` 与本地 3.14 冲突 → 修订 SPEC/PLAN 放宽为 `>=3.11,<3.15`，CI 仍固定 3.12。
+- 人工干预：用户确定冷启动第二 agent 类型为 Claude Code（规格上"与主 agent 类型不同"由用户拍板）。
 - 产出：`SPEC_PROCESS.md` §六补全；SPEC/PLAN 版本策略修订。
 - 教训：冷启动暴露的"计划与环境的矛盾"只有真跑一遍才能发现；实现阶段应预先统一 git safe.directory 与权限模式，减少环境噪音。

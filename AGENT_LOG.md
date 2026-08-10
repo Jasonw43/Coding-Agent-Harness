@@ -64,8 +64,16 @@
 - 内容：创建 `.venv`（Python 3.14.2）并安装全部依赖（pytest 9.1.1 / fastapi 0.141 / httpx 0.28 / keyring 25.7 均正常）；因沙箱写权限限制 worktree 无法落在工作区之外，**git worktree 要求（课程 §4.6）改为"每 task 独立分支 + 两阶段评审 + 合并"**，保留等价的过程隔离、提交历史与 PR 工作流语义。
 - 教训：环境约束导致的流程偏离须即时记录，并说明替代方案如何满足原要求的精神（隔离 + 可审计）。
 
-### T008 · T02 核心类型实现（主 agent 直接执行）
-- 技能：无（因流程从"子代理实现"临时切回主 agent 直办）。
-- 内容：Task 2 核心类型 `models.py`：先写 4 个红测（`tests/test_models.py`，预期 `ModuleNotFoundError: cah.models` 复现）；随后实现 6 个 dataclass（Action/ToolResult/GuardrailDecision/Feedback/LLMResponse/RunResult，含 PLAN 要求的默认值 `reason=""`、`risk_level="low"`）；`pytest tests/test_models.py` 4/4 绿，全量 5/5 绿；提交 `a23aa9a`（feat: core data models）→ fast-forward 合并 `main`（HEAD=`a23aa9a`）→ 删除特性分支 `feat/t02-models`，工作区干净。
-- 人工干预：主 agent 等待子代理 t02_models_v2 期间被用户中断；且该子代理长时间无可见产出，遂改为直接实现并完成两阶段评审（对照 SPEC/PLAN + 独立复跑）。
-- 教训：子代理任务可能长时间无产出或消息丢失；核心简单任务主 agent 直接执行更稳，红-绿-提交-评审-合并节奏不变。
+### T008 · T02 核心类型实现（subagent 完成 + 主 agent 复核）
+- 内容：Task 2 核心类型 `models.py`（含 `tests/test_models.py` 4 个红测）由 agent t02_models_v2 在共享工作区实现：红→绿→提交 `a23aa9a`（feat: core data models）→ fast-forward 合并 `main` → 删除特性分支 `feat/t02-models`；全量测试 5/5 绿。两阶段评审要点：6 个 dataclass（Action/ToolResult/GuardrailDecision/Feedback/LLMResponse/RunResult）与 PLAN T02 一致，默认值 `reason=""`、`risk_level="low"`，可变默认值用 `field(default_factory=...)`。
+- 记录修正（以 git 历史为准）：工作区曾出现一份未提交的 T008 改写稿，称"主 agent 弃掉未提交的 T03 草稿"——与 git 历史不符：T03 已提交 `d8801ed` 并合并入 main。本记录重写为与 `git log` 一致的事实版本。
+- 教训：共享工作区多 agent 并发时，流程记录须以 git 历史为准核对；未提交草稿可能被并发编辑覆盖，避免据草稿断言事实。
+
+### T009 · T03 声明式 TOML 配置（已合并）
+- 内容：`src/cah/config.py`（`HarnessConfig` dataclass + `load_config`：tomllib 解析、逐字段类型校验、非法即 `ValueError` 定位）+ `tests/test_config.py` 4 例（PLAN 2 例 + 默认值/返回类型 2 例）；提交 `d8801ed`，全量 9/9 绿；fast-forward 合并 main 并删除分支。
+
+### T010 · T04 LLM 抽象与 MockLLM（已合并）
+- 内容：`src/cah/llm/base.py`（LLMClient Protocol）+ `src/cah/llm/mock.py`（MockLLM：JSONL 脚本逐行回放、游标、loop 环绕、耗尽抛 StopIteration）+ `tests/test_llm_mock.py` 3 例；提交 `46e88e2`，全量 12/12 绿；合并 main 并删除分支。
+
+### T011 · T05 命令护栏（已合并）
+- 内容：`src/cah/guardrails/command.py`（CommandGuardrail：shlex 归一化、deny 子串 → BLOCKED、allow 前缀 → SAFE、其余 REQUIRE_APPROVAL、非 shell SAFE）+ `tests/test_guardrails.py` 3 例；提交 `4b99eea`，全量 15/15 绿；合并 main 并删除分支。

@@ -16,6 +16,8 @@ class Validator(Protocol):
 class TestRunnerValidator:
     """Run a test command and parse its output into objective feedback."""
 
+    __test__ = False  # not a pytest test class
+
     def __init__(self, command: list[str], timeout_s: int = 120) -> None:
         self.command = command
         self.timeout_s = timeout_s

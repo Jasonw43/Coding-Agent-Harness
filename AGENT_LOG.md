@@ -1,0 +1,23 @@
+# AGENT_LOG — Coding Agent Harness
+
+> 按时间顺序记录关键节点。格式：时间戳 + 触发技能 + 关键 prompt/context + 产出（commit hash/片段）+ 人工干预 + 教训。
+
+## 2026-08-10
+
+### T000 · 环境准备与需求阅读
+- 技能：无（准备阶段）。
+- 内容：阅读《通用要求》与《A · Coding Agent Harness》；确认本机 git 2.53、Python 3.14、Claude Code 已装（PowerShell 执行策略拦截 `.ps1`，用 `.cmd` 可绕过）；Docker 未装 → 分发定为 PyPI。
+- 人工决策：用户拒绝过一次 git clone 安装（改走插件市场），随后自行安装 Superpowers 插件成功（`openai-api-curated` 市场，15 个技能齐全，缓存于 `~/.codex/plugins/cache/.../superpowers`）。
+- 教训：环境事实要亲自验证，用户已完成的准备工作以文件系统证据为准。
+
+### T001 · Brainstorming（技能：brainstorming）
+- 内容：逐节敲定设计。关键节点与用户决策：
+  1. 重点维度 = **治理**（用户"听你的"采纳推荐；理由：代码机制最易单测 + 与 WebUI 审批台天然结合）。
+  2. 使用形态 = **本地 CLI 为主 + 浏览器审批台 + 线上 mock 演示实例**。
+  3. 真实 LLM = **DeepSeek**（OpenAI 兼容；开发测试全程 mock）。
+  4. 分发 = **PyPI 包**（本机无 Docker）。
+  5. 部署 = **Render**（注册流程已提供；账号尚未注册完成）。
+  6. 架构 = **分层内核 + 薄 Web 壳**（10 个模块：llm/loop/actions/guardrails/feedback/memory/config/cli/web/credentials）。
+- 人工干预：用户对每节设计逐一确认（"可以/没问题/ok"）；纠正过一次流程预期（询问"是否已开启 brainstorm 模式"）。
+- 产出：`SPEC.md`（本仓库根目录，含 §11 领域与机制设计）。
+- 教训：用户对技术方案信任度高的场景，把决策收敛为"推荐 + 理由 + 待确认"，推进效率最高；但账号类外部依赖（Render）仍需用户亲自完成。

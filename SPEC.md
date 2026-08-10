@@ -18,7 +18,7 @@ LLM 擅长"决定下一步做什么"，但它本身不是一台可依赖的系�
 ## 2. 用户故事
 
 1. **自主完成编码任务**：作为开发者，我给 harness 一个编码任务（如"实现一个函数并补测试"），它能自主读写工作区、执行命令、运行测试，直到任务完成或达到步数上限。验收：mock LLM 脚本下，循环在有限步内停机，产物落盘。
-2. **危险动作拦截与人工审批**：作为开发者，当 agent 要执行危险动作（如 `rm -rf`、`git push`、`DROP DATABASE`）时，我可以批准或拒绝；拒绝后 agent 收到原因并调整下一步。验收：护栏确定性拦截；HITL 状态机全转移路径单测通过。
+2. **危险动作拦截与人工审批**：作为开发者，当 agent 要执行危险动作（如 `rm -rf`、`git push`、`DROP DATABASE`）时，我可以批准或拒绝，以便在危险操作真正执行前有机会人工干预；拒绝后 agent 收到原因并调整下一步。验收：护栏确定性拦截；HITL 状态机全转移路径单测通过。
 3. **浏览器远程审批**：作为开发者，我可以在浏览器里实时查看运行事件，并远程批准/拒绝待审动作。验收：demo 实例在 mock 模式下可完成一次含审批的完整循环。
 4. **声明式配置**：作为开发者，我用 TOML 文件声明护栏规则、审批策略、启用的工具，无需改代码。验收：改配置后行为随之变化；非法配置快速失败并给出明确错误。
 5. **客观反馈与自我修正**：作为开发者，当测试失败时，agent 收到确定性的失败分类信号并基于它修正（有限重试）。验收：机制演示第②条——注入一次失败，下一次动作改变。
@@ -68,9 +68,9 @@ LLM 擅长"决定下一步做什么"，但它本身不是一台可依赖的系�
 - 输出：`GuardrailDecision(verdict, reason, risk_level, action_id)`。
 - 边界：fail-closed——规则自身出错时按 BLOCKED 处理。
 - 错误处理：未知命令解析歧义 → 保守拦截或转人工。
-- HITL 状态机（见 3.5）。
+- 与 HITL 的衔接：`REQUIRE_APPROVAL` 结果转交 `hitl/` 模块（见 3.5）。
 
-### 3.5 HITL 审批状态机
+### 3.5 `hitl/` — HITL 审批状态机（独立模块）
 
 - 输入：`approve(action_id, token)` / `reject(action_id, token)` / 超时事件。
 - 状态：`PENDING → APPROVED | REJECTED | EXPIRED | CANCELED`。
@@ -153,6 +153,7 @@ flowchart TB
     U -->|批准/拒绝| WEB[Web 审批台]
     CLI --> LOOP[loop: AgentLoop 主循环]
     LOOP --> LLM[llm: LLM 抽象层]
+    LLM -->|读取 key| CRED[credentials: Keyring 安全存储]
     LLM -->|动作| LOOP
     LOOP --> GR[guardrails: 治理管线]
     GR -->|需审批| HITL[HITL 状态机]
@@ -192,7 +193,7 @@ flowchart TB
 
 ### 7.2 分发
 - 形态：PyPI 包（`pyproject.toml` + `python -m build` 产出 wheel）。
-- 目标平台：Python 3.11+，跨平台（Windows/macOS/Linux）。
+- 目标平台：Python 3.11–3.13，跨平台（Windows/macOS/Linux）。
 - 获取方式：`pip install cah`（发布后）或 `pip install git+https://github.com/<owner>/coding-agent-harness.git`。
 - key 配置：目标机执行 `cah key set`（推荐，走凭据管理器）或 `.env`（明示明文风险）。
 - 已知限制：真实 LLM 需要网络与有效 key；免费部署实例为 demo 模式（MockLLM + 只读）。
@@ -201,7 +202,7 @@ flowchart TB
 
 | 项 | 选择 | 理由 |
 | --- | --- | --- |
-| 语言 | Python 3.11+ | mock 抽象与确定性测试最友好；标准库覆盖面广（`tomllib` 等） |
+| 语言 | Python 3.11–3.13（锁定 `<3.14`） | mock 抽象与确定性测试最友好；3.14 较新、部分依赖 wheel 可能缺失，锁定稳定版本降低风险 |
 | HTTP | httpx | 轻量、支持 OpenAI 兼容 API |
 | Web | FastAPI + uvicorn | SSE 支持好、零前端构建的演示审批台 |
 | 凭据 | keyring | 跨平台 OS 凭据管理器封装 |
@@ -220,13 +221,13 @@ flowchart TB
 5. 跨会话记忆可写可召回；配置错误快速失败。
 6. key 可录入/查看掩码状态/更新/清除；仓库与日志无真实凭据。
 7. `README.md` 含课程要求的全部章节；PyPI 构建产物可安装运行。
-8. GitHub Actions（push → 测试 + 构建 wheel）与 `.gitlab-ci.yml`（unit-test job）均通过。
+8. 两套 CI 并存且均通过：GitHub Actions 为实际 CI（push 自动跑测试 + 构建 wheel），承载公开仓库的 PR 工作流；`.gitlab-ci.yml` 含 `unit-test` job，随仓库推送到 NJU GitLab 满足作业清单要求；两次 CI 的最后执行记录均为 pass。
 9. Render demo 实例公网可访问，可完成一次含审批的演示运行。
 10. 交付物齐全：`SPEC.md`、`PLAN.md`、`SPEC_PROCESS.md`、`README.md`、`AGENT_LOG.md`、`REFLECTION.md`、CI 配置。
 
 ## 10. 风险与未决问题
 
-- Python 3.14 兼容性：本机为 3.14.2，需验证依赖 wheel 可用；必要时锁定 3.11/3.12 或更新依赖。
+- Python 版本策略：本机为 3.14.2，项目锁定 3.11–3.13；开发用 3.12 建 venv（winget 安装 Python 3.12），CI 固定 3.12，README 写明依赖前提。
 - Windows shell 语义：`shell` 工具需明确默认解释器（cmd），token 化解析需跨平台测试。
 - keyring 在无桌面会话（如 CI/服务器）不可用：以 `.env`/环境变量兜底并文档化。
 - Render 免费档休眠与冷启动：README 明示；演示可接受。

@@ -17,6 +17,10 @@ class ToolRegistry:
         self.sandbox = sandbox
         self.memory = memory
         self._tools: dict[str, ToolFn] = {}
+        # lazy import to avoid a circular import with tools.py
+        from cah.actions.tools import install_tools
+
+        install_tools(self)
 
     def register(self, name: str, fn: ToolFn) -> None:
         self._tools[name] = fn

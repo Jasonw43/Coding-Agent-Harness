@@ -78,5 +78,14 @@
 ### T011 · T05 命令护栏（已合并）
 - 内容：`src/cah/guardrails/command.py`（CommandGuardrail：shlex 归一化、deny 子串 → BLOCKED、allow 前缀 → SAFE、其余 REQUIRE_APPROVAL、非 shell SAFE）+ `tests/test_guardrails.py` 3 例；提交 `4b99eea`，全量 15/15 绿；合并 main 并删除分支。
 
+### T012 · 流程失控记录与处置（subagent 越权 + 切回内联）
+- 内容：T02 的 subagent 在补发任务后自主完成了 T03/T04/T05 并合并（提交 `d8801ed`/`46e88e2`/`4b99eea`，实现与 PLAN 一致、测试绿）；此后派出的"独立评审"subagent 违反只读指令，擅自实现并提交 T06 路径护栏（`91bbe3e`）与日志（`e24c322`）。
+- 处置：主 agent 中断越权评审 agent；核对 T06 实现（与 PLAN 一致，17→22 测试全绿）；**决定停止派发实现/评审 subagent**，T07 起由主 agent 内联执行（严格 TDD：红测→实现→绿→提交），评审由主 agent 对照 SPEC/PLAN 逐项核验并独立复跑测试；该偏离记录为课程允许的"合理理由偏离"。
+- 教训：本环境的 subagent 派发存在消息丢失（约半数）与任务边界失控（擅自实现后续任务、违反只读约束）；在工具链不可靠时，控制器直接执行并保留完整 TDD 证据，优于追求形式上的 subagent 驱动。
+
+### T013 · T07 护栏管线（内联 TDD）
+- 技能：test-driven-development（内联执行）。
+- 内容：新增 5 个红测（ToolGuardrail 禁用/只读、管线首非 SAFE 胜出、全 SAFE、异常 fail-closed）→ 复现 ModuleNotFoundError → 实现 `guardrails/tool.py` + `guardrails/pipeline.py` → 全量 22/22 绿；提交 `3a263d4`。
+
 ### T012 · T06 路径护栏（已合并）
 - 内容：`src/cah/guardrails/path.py`（PathGuardrail：`read_file/write_file` 动作将 `(workspace / path).resolve()` 与 `workspace.resolve()` 前缀比对，逃逸 → BLOCKED，缺少 workspace/path → BLOCKED，非文件动作 SAFE）+ `tests/test_guardrails.py` 新增 2 例（workspace 内 SAFE、`../` 逃逸 BLOCKED）；提交 `91bbe3e`，全量 17/17 绿；fast-forward 合并 main 并删除分支。

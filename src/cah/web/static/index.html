@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>cah 审批台</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+      button { margin-right: 0.5rem; }
+      pre { background: #f6f8fa; padding: 1rem; max-height: 300px; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>cah 审批台（demo 模式）</h1>
+    <button id="demo">启动演示运行</button>
+    <h2>待审批动作</h2>
+    <div id="actions"><p>暂无</p></div>
+    <h2>运行事件流</h2>
+    <pre id="log">（启动演示后显示）</pre>
+
+    <script>
+      const actionsEl = document.getElementById("actions");
+      const logEl = document.getElementById("log");
+      let streamController = null;
+
+      async function refreshActions() {
+        const res = await fetch("/api/actions");
+        const items = await res.json();
+        if (!items.length) {
+          actionsEl.innerHTML = "<p>暂无</p>";
+          return;
+        }
+        actionsEl.innerHTML = "";
+        for (const item of items) {
+          const div = document.createElement("div");
+          div.className = "card";
+          div.innerHTML =
+            `<p><b>${item.action_id}</b> — ${item.reason}</p>` +
+            `<button onclick="decide('${item.action_id}', 'approve', '${item.token}')">批准</button>` +
+            `<button onclick="decide('${item.action_id}', 'reject', '${item.token}')">拒绝</button>`;
+          actionsEl.appendChild(div);
+        }
+      }
+
+      async function decide(id, kind, token) {
+        const res = await fetch(`/api/actions/${id}/${kind}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        if (res.ok) refreshActions();
+      }
+
+      function watchEvents(runId) {
+        if (streamController) streamController.abort();
+        const source = new EventSource(`/api/runs/${runId}/events`);
+        source.onmessage = (e) => {
+          logEl.textContent += JSON.stringify(JSON.parse(e.data), null, 2) + "\n";
+        };
+        source.addEventListener("FINAL", () => {
+          source.close();
+          logEl.textContent += "--- 运行结束 ---\n";
+          refreshActions();
+        });
+        source.onerror = () => source.close();
+        streamController = source;
+      }
+
+      document.getElementById("demo").onclick = async () => {
+        logEl.textContent = "";
+        const res = await fetch("/api/demo", { method: "POST" });
+        const data = await res.json();
+        watchEvents(data.run_id);
+      };
+
+      refreshActions();
+      setInterval(refreshActions, 1500);
+    </script>
+  </body>
+</html>

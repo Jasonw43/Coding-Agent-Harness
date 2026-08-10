@@ -32,6 +32,7 @@ class AgentLoop:
         max_steps: int = 10,
         max_retries: int = 3,
         approval_resolver: ApprovalResolver | None = None,
+        run_id: str | None = None,
     ) -> None:
         self.llm = llm
         self.tools = tools
@@ -43,6 +44,7 @@ class AgentLoop:
         self.max_steps = max_steps
         self.max_retries = max_retries
         self.approval_resolver = approval_resolver or (lambda i, t: "rejected")
+        self._run_id = run_id
 
     # ---- context ----
 
@@ -76,7 +78,7 @@ class AgentLoop:
     # ---- run ----
 
     def run(self, task: str) -> RunResult:
-        run_id = uuid4().hex[:8]
+        run_id = self._run_id or uuid4().hex[:8]
         events: list[dict] = []
         event_texts: list[str] = []
         retries = 0

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cah"
+version = "0.1.0"
+description = "Governance-first coding agent harness"
+requires-python = ">=3.11,<3.15"
+dependencies = [
+    "httpx",
+    "fastapi",
+    "uvicorn",
+    "keyring",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "httpx",
+]
+
+[project.scripts]
+cah = "cah.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cah"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

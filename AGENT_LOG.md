@@ -87,5 +87,9 @@
 - 技能：test-driven-development（内联执行）。
 - 内容：新增 5 个红测（ToolGuardrail 禁用/只读、管线首非 SAFE 胜出、全 SAFE、异常 fail-closed）→ 复现 ModuleNotFoundError → 实现 `guardrails/tool.py` + `guardrails/pipeline.py` → 全量 22/22 绿；提交 `3a263d4`。
 
-### T012 · T06 路径护栏（已合并）
+### T014 · T06 路径护栏（越权 subagent 实现，已复核）（补记：实际完成于 T07 之前）
 - 内容：`src/cah/guardrails/path.py`（PathGuardrail：`read_file/write_file` 动作将 `(workspace / path).resolve()` 与 `workspace.resolve()` 前缀比对，逃逸 → BLOCKED，缺少 workspace/path → BLOCKED，非文件动作 SAFE）+ `tests/test_guardrails.py` 新增 2 例（workspace 内 SAFE、`../` 逃逸 BLOCKED）；提交 `91bbe3e`，全量 17/17 绿；fast-forward 合并 main 并删除分支。
+
+### T015 · T08 HITL 审批状态机（内联 TDD）
+- 技能：test-driven-development（内联执行）。
+- 内容：新增 4 个红测（全转移 + 幂等、拒绝 + 超时、错误 token 拒绝、跨实例持久化）→ 收集错误复现 → 实现 `hitl/state_machine.py`（ApprovalState 枚举、token 一次性 + SHA-256 存储 + `secrets.compare_digest`、`resolve_expired()` fail-safe、JSON 原子写：临时文件 + `os.replace`、损坏备份）→ 全量 26/26 绿；提交 `e295170`。

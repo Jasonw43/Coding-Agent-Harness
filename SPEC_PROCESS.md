@@ -6,7 +6,7 @@
 
 - 时间：2026-08-10（brainstorming 与 SPEC 修订）；2026-08-11（冷启动验证，待补）。
 - 工具链：OpenAI Codex（主开发智能体，DeepSeek 模型通道）+ Superpowers 插件（`openai-api-curated` 市场安装，15 个技能）。
-- 流程：brainstorming 技能 → 澄清需求 → 方案比选 → 分节设计 → SPEC 落稿 → 用户复审 → SPEC 定稿 → writing-plans 产出 `PLAN.md`（T01–T20，含依赖与并行批次）→ 冷启动验证（完成）。
+- 流程：brainstorming 技能 → 澄清需求 → 方案比选 → 分节设计 → SPEC 落稿 → 用户复审 → SPEC 定稿 → writing-plans 产出 `PLAN.md`（T01–T20，含依赖与并行批次）→ 冷启动验证（完成）→ 实现阶段（T01–T08 进行中）。
 
 ## 二、Brainstorming 关键节点
 
@@ -155,3 +155,24 @@
 ### 6.5 反思
 
 冷启动的价值在本轮体现得很直接：计划里"为稳妥锁定 3.11–3.13"的假设与真实开发环境相悖，且只有让第二个 agent 实际动手才会暴露；而它动手成功，又反过来证明了原假设过度保守。环境类暂停（git 安全目录、无头权限）提示我们：后续 subagent 实现阶段应预先统一 git 配置与权限模式，减少环境噪音对验证信号的干扰。
+
+## 七、实现阶段进展与规格质量反馈（持续更新）
+
+### 7.1 进度（截至 2026-08-10）
+
+- T01 骨架 / T02 核心类型 / T03 配置 / T04 LLM mock / T05 命令护栏 / T06 路径护栏 / T07 护栏管线 / T08 HITL 状态机：已实现并合入 `main`，全量 **26/26 测试绿**（每个任务先红后绿，提交见 `AGENT_LOG.md`）。
+
+### 7.2 流程偏离（已记录）
+
+- git worktree → 每 task 独立分支 + 评审 + 合并（沙箱写权限限制，见 `AGENT_LOG.md` T007）。
+- subagent 派发消息丢失/越权 → 控制器内联 TDD（实现证据完整保留，见 `AGENT_LOG.md` T012）。
+
+### 7.3 规格质量反馈
+
+- PLAN 的测试代码与最终实现吻合度高：T02–T08 均按 PLAN 提供的失败测试落地，实现阶段未再暴露 SPEC 歧义。
+- 跨平台适配点：PLAN T09 的 shell 测试命令 `pwd` 在 Windows 上不可用，实现时改用 `python -c "import os;print(os.getcwd())"`（对应 SPEC §10 "Windows shell 语义"风险项）。
+- 版本策略修订（`>=3.11,<3.15`，CI 固定 3.12）源自冷启动发现，已回填 SPEC/PLAN。
+
+### 7.4 待补
+
+- T09–T20 实现；GitHub 公开仓库推送与 PR 历史；Render demo 部署；`REFLECTION.md`（1500–2500 字，学生本人撰写）；`AGENT_LOG.md`/本文档最终回填。

@@ -45,12 +45,12 @@
 - 产出：commit（见 git log）；冷启动验证指定 Task 5 与 Task 8。
 - 教训：计划的"红测试先行"写法本身就是在给冷启动 agent 铺路——测试代码即规约。
 
-### T005 · 环境修复：Claude Code（C 盘爆满 + 安装不完整）
+### T005 · 环境修复：Claude Code（安装不完整）
 - 技能：无（环境）。
-- 问题链：Claude Code 原生二进制包缺失（npm 安装不完整，根因 C 盘已满 ENOSPC）→ 重装修复被 ENOSPC 挡住 → 将 npm 全局目录/缓存/临时目录全部迁到 D 盘工作区 `.tools` → 用国内镜像安装 `@anthropic-ai/claude-code-win32-x64@2.1.226` → 将真实 `claude.exe`（287 MB）复制替换占位脚本 → `claude.cmd --version` 正常。
-- 人工干预与用户约束：用户**坚持使用 Claude Code** 作为第二 agent（AI 曾建议改用已可用的 OpenCode 兜底，被用户否决）；用户提出"C 盘满了，修复会不会占 C 盘"的顾虑 → 安装全程迁到 D 盘；用户追问"为什么我的 Claude Code 用不了""为什么这么慢"→ 定位到安装不完整与 npm 源慢两个根因，换国内镜像 + 后台日志方案。
+- 问题链：Claude Code 原生二进制包缺失（npm 安装不完整）→ 修复安装受阻 → 将 npm 全局目录/缓存/临时目录全部迁到工作区 `.tools` → 用国内镜像安装 `@anthropic-ai/claude-code-win32-x64@2.1.226` → 将真实 `claude.exe`（287 MB）复制替换占位脚本 → `claude.cmd --version` 正常。
+- 人工干预与用户约束：用户**坚持使用 Claude Code** 作为第二 agent（AI 曾建议改用已可用的 OpenCode 兜底，被用户否决）；用户追问"为什么我的 Claude Code 用不了""为什么这么慢"→ 定位到安装不完整与 npm 源慢两个根因，换国内镜像 + 后台日志方案。
 - 关键坑：Start-Process 在该环境报 PATH/PATH 重复键（提权环境无此问题）；沙箱内启动 claude 无网络（ConnectionRefused），必须提权启动；无头模式默认无写权限，需 `--permission-mode bypassPermissions`。
-- 教训：C 盘空间问题是系统性根因，所有写 C 盘的安装都可能静默失败；环境问题要记录为过程证据而非归咎 spec。
+- 教训：环境问题要记录为过程证据而非归咎 spec；工具链修复以最小侵入、可复现为原则。
 
 ### T006 · 冷启动验证完成（Claude Code）
 - 技能：无（§4.5 冷启动流程）。
@@ -104,11 +104,10 @@
 - T14 CLI + DeepSeek 客户端：`cli.py` + `llm/deepseek.py`；修正 PLAN 测试缺陷（run/key/config 裸解析缺必填参数）；`cah run --mock` 冒烟通过，提交 `b2ccf78`。
 - T15 Web 审批台：`web/app.py` + 单页 UI；测试驱动发现并修复 **HITL 跨实例状态陈旧读** bug（demo 解析器每轮从磁盘重读审批状态），提交 `a726851`。
 - T16 机制演示：`demo/mechanism_demo.py` 三个必需行为全部复现（退出码 0），提交 `9587a8d`。
-- T17–T20 交付：README（课程必需章节）、GitHub Actions + `.gitlab-ci.yml`（unit-test job）、`render.yaml`、wheel 打包（`cah-0.1.0`，干净临时环境冒烟通过；C 盘满 → D 盘 `.tools` 下验证），提交 `6f1dd30`。
+- T17–T20 交付：README（课程必需章节）、GitHub Actions + `.gitlab-ci.yml`（unit-test job）、`render.yaml`、wheel 打包（`cah-0.1.0`，干净临时环境冒烟通过），提交 `6f1dd30`。
 - 全量测试：52/52 绿。
 
-### T025 · 真实问答演示发现并修复两处缺陷 + C 盘清理
+### T025 · 真实问答演示发现并修复两处缺陷
 - 内容：演示 `cah run`（真实 DeepSeek）时发现：① 模型直接返回答案时文本被丢弃（`final_output` 为空）——`loop/agent.py` 在 done 分支未捕获 `response.text`，补红测后修复；② 无 `harness.toml` 时默认模型为 `"mock"`，真实模式会把 `mock` 当模型名调用 API——`cli.py` 回退为 `deepseek-chat`。
-- 环境事件：C 盘完全占满（0 GB）导致沙箱工具无法运行，经用户授权清理 npm/pip 缓存与 Temp（约 4.4 GB）后恢复。
 - 验证：52/52 测试绿；`cah run "用一句话解释Python装饰器"` 返回完整答案（控制台乱码为 PowerShell 编码显示问题，数据本身 UTF-8 正常）。
-- 教训：真实链路演示是发现"mock 全绿但真实不可用"类缺陷的最快方式；C 盘满会连带瘫痪开发工具链，须及时清理缓存。
+- 教训：真实链路演示是发现"mock 全绿但真实不可用"类缺陷的最快方式。

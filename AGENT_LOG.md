@@ -58,3 +58,8 @@
 - 人工干预：用户确定冷启动第二 agent 类型为 Claude Code（规格上"与主 agent 类型不同"由用户拍板）。
 - 产出：`SPEC_PROCESS.md` §六补全；SPEC/PLAN 版本策略修订。
 - 教训：冷启动暴露的"计划与环境的矛盾"只有真跑一遍才能发现；实现阶段应预先统一 git safe.directory 与权限模式，减少环境噪音。
+
+### T007 · 实现阶段启动与流程偏离记录
+- 技能：subagent-driven-development（启动）。
+- 内容：创建 `.venv`（Python 3.14.2）并安装全部依赖（pytest 9.1.1 / fastapi 0.141 / httpx 0.28 / keyring 25.7 均正常）；因沙箱写权限限制 worktree 无法落在工作区之外，**git worktree 要求（课程 §4.6）改为"每 task 独立分支 + 两阶段评审 + 合并"**，保留等价的过程隔离、提交历史与 PR 工作流语义。
+- 教训：环境约束导致的流程偏离须即时记录，并说明替代方案如何满足原要求的精神（隔离 + 可审计）。

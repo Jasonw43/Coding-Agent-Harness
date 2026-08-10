@@ -6,7 +6,7 @@
 
 - 时间：2026-08-10（brainstorming 与 SPEC 修订）；2026-08-11（冷启动验证，待补）。
 - 工具链：OpenAI Codex（主开发智能体，DeepSeek 模型通道）+ Superpowers 插件（`openai-api-curated` 市场安装，15 个技能）。
-- 流程：brainstorming 技能 → 澄清需求 → 方案比选 → 分节设计 → SPEC 落稿 → 用户复审 → SPEC 定稿 → writing-plans 产出 `PLAN.md`（T01–T20，含依赖与并行批次）。
+- 流程：brainstorming 技能 → 澄清需求 → 方案比选 → 分节设计 → SPEC 落稿 → 用户复审 → SPEC 定稿 → writing-plans 产出 `PLAN.md`（T01–T20，含依赖与并行批次）→ 冷启动验证（完成）。
 
 ## 二、Brainstorming 关键节点
 
@@ -108,7 +108,36 @@
 - **做得好的**：一次只问一个问题，决策收敛快；分节呈现设计 + 逐节签字，避免一次性大块设计被囫囵吞下；HARD-GATE 强制"未获批不写代码"，有效防止提前动手。
 - **不满意的**：默认把设计文档写进 `docs/superpowers/specs/`，与课程要求的根目录 `SPEC.md` 冲突（按"用户要求优先"原则改为根目录，需在日志中记录该偏离）；技能假设 Claude Code 的工具形态，在 Codex 上需手动适配（本环境直接读插件技能文件执行）；visual companion 对纯后端项目价值低，未启用。
 
-## 六、冷启动验证（待完成）
+## 六、冷启动验证（已完成）
 
-- 计划：2026-08-11，使用与主开发智能体不同的 **Claude Code**，全新 session、不导入对话历史与 memory，仅提供 `SPEC.md` + `PLAN.md`，从中选 1–2 个 task 自主推进，遇不确定即暂停提问。
-- 待记录：第二个 agent 的暂停点与提问、暴露的 spec 缺陷、与我原意不一致的解读及归属（spec 错还是它读错）、产出差距、据此对 SPEC/PLAN 的修订（含修订前后关键 diff）。
+### 6.1 执行情况
+
+- 时间：2026-08-10（环境修复后执行）。
+- 第二 agent：**Claude Code 2.1.226**（与主开发智能体 Codex 类型不同），无头模式、全新会话、不导入对话历史与 memory；仅提供 `SPEC.md` + `PLAN.md`。
+- 指定任务：**Task 5（命令护栏）与 Task 8（HITL 状态机）**，允许创建两个任务测试所依赖的最小共享脚手架（`models.py`），不得实现其他 task。
+- 结果：3 次提交——`901c002`（scaffold）、`32ef984`（feat: command guardrail）、`8635c5f`（feat: HITL approval state machine）；**10 个测试全部通过**（主 agent 在 Python 3.14.2 上独立复验 `python -m pytest` → `10 passed`）。
+
+### 6.2 第二个 agent 的暂停点与提问
+
+1. **git 安全目录（环境问题，非 spec 缺陷）**：仓库由沙箱用户创建，Claude Code（以用户身份运行）被 git 拒绝访问，它暂停并请求执行 `git config --global --add safe.directory`。主 agent 以仓库级 `safe.directory` 配置修复，不涉及全局改动。
+2. **无头模式权限门（环境问题）**：无头会话默认没有写文件/执行命令权限，agent 请求批准；以 `--permission-mode bypassPermissions` 在隔离目录内重启解决。
+3. **Python 版本约束冲突（spec/plan 相关，最有价值的发现）**：PLAN 的 `requires-python = ">=3.11,<3.14"` 与开发机 Python 3.14.2 冲突，agent 无法 `pip install -e .`，自行放宽为 `>=3.11` 才继续。**这暴露了计划与开发环境的矛盾**；同时验证证明 3.14 下依赖安装与全部测试均可用。
+
+### 6.3 解读差异与产出差距
+
+- 解读差异：无。agent 对 Task 5/8 的实现与计划一致，未越界实现其他 task；额外创建的 `tests/test_models.py`、`tests/__init__.py` 属合理脚手架。
+- 产出差距：无功能差距；提交粒度与计划建议一致（scaffold → guardrail → hitl）。
+- 客观证据：`SPEC.md`/`PLAN.md` 中这两个 task 的测试代码与实际实现完全吻合，说明规约对该范围足够清晰。
+
+### 6.4 据此对 SPEC/PLAN 的修订（关键 diff）
+
+| 位置 | 修订前 | 修订后 | 原因 |
+| --- | --- | --- | --- |
+| SPEC §8 语言行 | Python 3.11–3.13（锁定 `<3.14`） | Python 3.11–3.14（CI 固定 3.12 作稳定基线） | 冷启动实测 3.14 可用 |
+| SPEC §7.2 目标平台 | Python 3.11–3.13 | Python 3.11–3.14 | 同上 |
+| SPEC §10 版本策略 | 开发用 3.12 建 venv（winget 安装） | 本地 3.14.2 已实测可用，无需另装；CI 固定 3.12 | 消除与开发环境矛盾 |
+| PLAN T01 Step 3 | `requires-python = ">=3.11,<3.14"` | `requires-python = ">=3.11,<3.15"` | 支持本地 3.14 开发 |
+
+### 6.5 反思
+
+冷启动的价值在本轮体现得很直接：计划里"为稳妥锁定 3.11–3.13"的假设与真实开发环境相悖，且只有让第二个 agent 实际动手才会暴露；而它动手成功，又反过来证明了原假设过度保守。环境类暂停（git 安全目录、无头权限）提示我们：后续 subagent 实现阶段应预先统一 git 配置与权限模式，减少环境噪音对验证信号的干扰。

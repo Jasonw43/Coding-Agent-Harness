@@ -43,3 +43,15 @@
 - 内容：用户确认 SPEC 定稿；按课程 §4.3 将实现拆为 T01–T20（每 task 含目标/文件/失败测试/实现要点/验证/commit），并标注依赖与并行批次（worktree 用）；`PLAN.md` 落于仓库根目录（偏离技能默认路径，理由：课程交付物清单要求根目录）。
 - 产出：commit（见 git log）；冷启动验证指定 Task 5 与 Task 8。
 - 教训：计划的"红测试先行"写法本身就是在给冷启动 agent 铺路——测试代码即规约。
+
+### T005 · 环境修复：Claude Code（C 盘爆满 + 安装不完整）
+- 技能：无（环境）。
+- 问题链：Claude Code 原生二进制包缺失（npm 安装不完整，根因 C 盘已满 ENOSPC）→ 重装修复被 ENOSPC 挡住 → 将 npm 全局目录/缓存/临时目录全部迁到 D 盘工作区 `.tools` → 用国内镜像安装 `@anthropic-ai/claude-code-win32-x64@2.1.226` → 将真实 `claude.exe`（287 MB）复制替换占位脚本 → `claude.cmd --version` 正常。
+- 关键坑：Start-Process 在该环境报 PATH/PATH 重复键（提权环境无此问题）；沙箱内启动 claude 无网络（ConnectionRefused），必须提权启动；无头模式默认无写权限，需 `--permission-mode bypassPermissions`。
+- 教训：C 盘空间问题是系统性根因，所有写 C 盘的安装都可能静默失败；环境问题要记录为过程证据而非归咎 spec。
+
+### T006 · 冷启动验证完成（Claude Code）
+- 技能：无（§4.5 冷启动流程）。
+- 内容：Claude Code 无头模式在隔离仓库（仅 SPEC+PLAN）实现 Task 5/8：提交 `901c002`/`32ef984`/`8635c5f`，10 测试全绿（主 agent 独立复验）。暂停点：git safe.directory、无头权限门（均环境问题）；发现计划 `requires-python <3.14` 与本地 3.14 冲突 → 修订 SPEC/PLAN 放宽为 `>=3.11,<3.15`，CI 仍固定 3.12。
+- 产出：`SPEC_PROCESS.md` §六补全；SPEC/PLAN 版本策略修订。
+- 教训：冷启动暴露的"计划与环境的矛盾"只有真跑一遍才能发现；实现阶段应预先统一 git safe.directory 与权限模式，减少环境噪音。

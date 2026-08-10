@@ -60,7 +60,7 @@ def test_cah_importable():
 - [ ] **Step 2: 验证失败**
 Run: `python -m pytest tests/test_import.py -v` → 预期 `ModuleNotFoundError: cah`
 
-- [ ] **Step 3: 最小实现** — 创建 `pyproject.toml`（requires-python `>=3.11,<3.14`，hatchling 打包，`[project.scripts] cah = "cah.cli:main"`，依赖 httpx/fastapi/uvicorn/keyring，dev 依赖 pytest/httpx）与全部空包文件；`src/cah/__init__.py` 写 `__version__ = "0.1.0"`。
+- [ ] **Step 3: 最小实现** — 创建 `pyproject.toml`（requires-python `>=3.11,<3.15`，hatchling 打包，`[project.scripts] cah = "cah.cli:main"`，依赖 httpx/fastapi/uvicorn/keyring，dev 依赖 pytest/httpx）与全部空包文件；`src/cah/__init__.py` 写 `__version__ = "0.1.0"`。
 
 - [ ] **Step 4: 验证通过** — `python -m pytest tests/test_import.py -v` → PASS
 
@@ -760,4 +760,4 @@ if __name__ == "__main__":
 
 ## 冷启动验证（§4.5）指定任务
 
-冷启动 agent（Claude Code，全新 session）从本计划中选择 **Task 5（命令护栏）与 Task 8（HITL 状态机）** 各实现一遍（含 TDD 红绿步骤），遇不确定即暂停提问。结果记录进 `SPEC_PROCESS.md` §六。
+冷启动 agent（Claude Code 2.1.226，全新 session）已完成 **Task 5（命令护栏）与 Task 8（HITL 状态机）**（2026-08-10）：提交 `901c002`（scaffold）、`32ef984`（guardrail）、`8635c5f`（hitl），10 个测试全绿（主 agent 独立复验通过）。结果与修订记录见 `SPEC_PROCESS.md` §六。

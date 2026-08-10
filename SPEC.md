@@ -193,7 +193,7 @@ flowchart TB
 
 ### 7.2 分发
 - 形态：PyPI 包（`pyproject.toml` + `python -m build` 产出 wheel）。
-- 目标平台：Python 3.11–3.13，跨平台（Windows/macOS/Linux）。
+- 目标平台：Python 3.11–3.14，跨平台（Windows/macOS/Linux）。
 - 获取方式：`pip install cah`（发布后）或 `pip install git+https://github.com/<owner>/coding-agent-harness.git`。
 - key 配置：目标机执行 `cah key set`（推荐，走凭据管理器）或 `.env`（明示明文风险）。
 - 已知限制：真实 LLM 需要网络与有效 key；免费部署实例为 demo 模式（MockLLM + 只读）。
@@ -202,7 +202,7 @@ flowchart TB
 
 | 项 | 选择 | 理由 |
 | --- | --- | --- |
-| 语言 | Python 3.11–3.13（锁定 `<3.14`） | mock 抽象与确定性测试最友好；3.14 较新、部分依赖 wheel 可能缺失，锁定稳定版本降低风险 |
+| 语言 | Python 3.11–3.14（CI 固定 3.12 作稳定基线） | mock 抽象与确定性测试最友好；3.14 已由冷启动验证实测可用（见 §10），CI 固定 3.12 保证干净机可复现 |
 | HTTP | httpx | 轻量、支持 OpenAI 兼容 API |
 | Web | FastAPI + uvicorn | SSE 支持好、零前端构建的演示审批台 |
 | 凭据 | keyring | 跨平台 OS 凭据管理器封装 |
@@ -227,7 +227,7 @@ flowchart TB
 
 ## 10. 风险与未决问题
 
-- Python 版本策略：本机为 3.14.2，项目锁定 3.11–3.13；开发用 3.12 建 venv（winget 安装 Python 3.12），CI 固定 3.12，README 写明依赖前提。
+- Python 版本策略：本机为 3.14.2，经冷启动验证（2026-08-10）确认依赖安装与全部核心测试在 3.14 下通过，故项目支持 `>=3.11,<3.15`；CI 固定 3.12 作为稳定基线，README 写明依赖前提。
 - Windows shell 语义：`shell` 工具需明确默认解释器（cmd），token 化解析需跨平台测试。
 - keyring 在无桌面会话（如 CI/服务器）不可用：以 `.env`/环境变量兜底并文档化。
 - Render 免费档休眠与冷启动：README 明示；演示可接受。

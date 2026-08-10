@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from cah.guardrails.command import CommandGuardrail
+from cah.guardrails.path import PathGuardrail
 from cah.models import Action
 
 
@@ -20,3 +21,25 @@ def test_non_shell_action_safe():
     g = CommandGuardrail(deny_patterns=[], allow_prefixes=[])
     d = g.check(Action(id="a", type="read_file", params={"path": "x"}, run_id="r"), Path("."))
     assert d.verdict == "SAFE"
+
+
+def test_path_inside_ok(tmp_path):
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    g = PathGuardrail()
+    d = g.check(
+        Action(id="a", type="write_file", params={"path": "ok.txt"}, run_id="r"),
+        ws,
+    )
+    assert d.verdict == "SAFE"
+
+
+def test_path_escape_blocked(tmp_path):
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    g = PathGuardrail()
+    d = g.check(
+        Action(id="a", type="write_file", params={"path": "../escape.txt"}, run_id="r"),
+        ws,
+    )
+    assert d.verdict == "BLOCKED"

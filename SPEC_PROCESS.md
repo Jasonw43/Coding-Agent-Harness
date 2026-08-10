@@ -6,7 +6,7 @@
 
 - 时间：2026-08-10（brainstorming 与 SPEC 修订）；2026-08-11（冷启动验证，待补）。
 - 工具链：OpenAI Codex（主开发智能体，DeepSeek 模型通道）+ Superpowers 插件（`openai-api-curated` 市场安装，15 个技能）。
-- 流程：brainstorming 技能 → 澄清需求 → 方案比选 → 分节设计 → SPEC 落稿 → 用户复审 → （下一步 writing-plans）。
+- 流程：brainstorming 技能 → 澄清需求 → 方案比选 → 分节设计 → SPEC 落稿 → 用户复审 → SPEC 定稿 → writing-plans 产出 `PLAN.md`（T01–T20，含依赖与并行批次）。
 
 ## 二、Brainstorming 关键节点
 

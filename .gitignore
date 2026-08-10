@@ -3,6 +3,8 @@
 .env.*
 !.env.example
 .harness/
+.coldstart/
+.coldstart-ws/
 
 # Python
 __pycache__/

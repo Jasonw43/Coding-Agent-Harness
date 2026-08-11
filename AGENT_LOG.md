@@ -144,3 +144,9 @@
 ### T030 · NJU GitLab 提交与 unit-test CI 通过
 - 内容：用户创建 NJU GitLab 私有项目（`https://git.nju.edu.cn/Jason43/coding-agent-harness`）；推送需细粒度令牌（`Repository → Code: Push` 权限，首次 403 后补齐）；`.gitlab-ci.yml` 的 `unit-test` job 在 GitLab 流水线中通过。
 - 至此课程交付清单全部落地：SPEC/PLAN/SPEC_PROCESS/源码/README/AGENT_LOG/双 CI（GitHub Actions + GitLab unit-test）/线上 WebUI URL；仅剩 `REFLECTION.md`（学生本人撰写）。
+
+### T031 · 第二轮用户评审 12 条意见的核实与修复
+- 技能：receiving-code-review（逐条核实，全部采纳/说明）。
+- 修复：① LLMClient 协议参数统一为 `list[str]`；② 新增 `HarnessContext` + `AgentLoop.from_context`（CLI 已改用）；③ 抽出共享 `web/console.py`（DemoConsole），FastAPI 与 Streamlit 共用，消除复制；④ 上下文预算截断（`context_budget_tokens`，超限提示截断）；⑤ DeepSeekLLM 重试/退避（3 次，测试覆盖成功与放弃路径）；⑥ `search` 符号链接逃逸加固；⑦ demo token 无认证 → README 明示仅限演示；⑧ 命令护栏改为 token 级匹配（`rm` 不再误杀 `termtests`）；⑨ `prev_ok` 三态改 `ValidationState` 枚举；⑩ XML 解析脆弱 → 记录为已知限制；⑪ MockLLM 整读脚本 → 记录为已知限制；⑫ PathGuardrail 标注 `Path | None`。
+- 测试：新增 OUTPUT_LIMIT 截断、敏感环境变量过滤、全链路集成（parser→护栏→工具→反馈→重试收敛）、`from_context`、重试/退避；conftest 提供 workspace/registry fixtures；集成测试同时暴露并修复"BLOCKED 动作不应触发校验"的行为问题。
+- 全量 83/83 绿（1 跳过：本机无符号链接权限，CI 覆盖）。

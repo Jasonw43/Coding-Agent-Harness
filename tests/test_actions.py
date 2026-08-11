@@ -42,3 +42,44 @@ def test_registry_dispatch(tmp_path):
     assert r.ok
     r2 = reg.dispatch("no_such_tool", {})
     assert not r2.ok
+
+
+def test_search_does_not_follow_symlink_outside_workspace(tmp_path):
+    import os
+
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "secret.txt").write_text("TOPSECRET", encoding="utf-8")
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    link = ws / "leak"
+    try:
+        os.symlink(outside, link, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        import pytest
+
+        pytest.skip("symlinks not permitted on this platform")
+    sb = WorkspaceSandbox(root=ws, read_only=False)
+    reg = ToolRegistry(sandbox=sb)
+    r = reg.dispatch("search", {"pattern": "TOPSECRET", "path": "."})
+    assert r.ok
+    assert "secret.txt" not in r.output
+
+
+def test_output_limit_truncates_large_reads(tmp_path):
+    from cah.actions.sandbox import OUTPUT_LIMIT
+
+    sb = WorkspaceSandbox(root=tmp_path, read_only=False)
+    sb.write_file("big.txt", "x" * (OUTPUT_LIMIT * 2))
+    r = sb.read_file("big.txt")
+    assert r.ok and len(r.output) <= OUTPUT_LIMIT
+
+
+def test_shell_env_sanitizes_secrets(tmp_path, monkeypatch):
+    monkeypatch.setenv("CAH_TEST_SECRET", "hunter2")
+    sb = WorkspaceSandbox(root=tmp_path, read_only=False)
+    r = sb.run_shell(
+        "python -c \"import os;print(os.environ.get('CAH_TEST_SECRET','MISSING'))\"",
+        timeout_s=30,
+    )
+    assert r.ok and "MISSING" in r.output

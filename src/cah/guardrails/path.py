@@ -10,7 +10,7 @@ FILE_ACTION_TYPES = frozenset({"read_file", "write_file"})
 class PathGuardrail:
     """Ensure file actions stay inside the workspace directory."""
 
-    def check(self, action: Action, workspace: Path) -> GuardrailDecision:
+    def check(self, action: Action, workspace: Path | None) -> GuardrailDecision:
         if action.type not in FILE_ACTION_TYPES:
             return GuardrailDecision(verdict="SAFE", action_id=action.id)
 

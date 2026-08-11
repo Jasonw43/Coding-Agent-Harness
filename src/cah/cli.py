@@ -20,7 +20,7 @@ from cah.guardrails.tool import ToolGuardrail
 from cah.hitl.state_machine import HITLStateMachine
 from cah.llm.deepseek import DeepSeekLLM, LLMError
 from cah.llm.mock import MockLLM
-from cah.loop.agent import AgentLoop
+from cah.loop.agent import AgentLoop, HarnessContext
 from cah.memory.store import MemoryStore
 
 
@@ -167,7 +167,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
                 timeout_s=config.approval_timeout_s,
                 notify=notify,
             )
-    loop = AgentLoop(
+    context = HarnessContext(
         llm=llm,
         tools=tools,
         pipeline=pipeline,
@@ -179,6 +179,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         max_retries=config.max_retries,
         approval_resolver=resolver,
     )
+    loop = AgentLoop.from_context(context)
     try:
         result = loop.run(args.task)
     except LLMError as exc:

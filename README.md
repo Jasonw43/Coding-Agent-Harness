@@ -108,12 +108,15 @@ demo/mechanism_demo.py  # 三个必需行为的机制演示
 - **只读模式**：`--read-only` / demo 模式禁用写文件与 shell。
 - **fail-closed**：护栏自身出错时按拒绝处理。
 - **HITL**：`cah run` 遇到需审批动作时会打印一次性 token 和审批命令，循环等待你的决定；可在另一个终端 `cah approve <id> --token <token>` 批准或 `cah reject` 拒绝，超时默认拒绝；token 以 SHA-256 存储、一次性有效。
+- **搜索隔离**：`search` 工具在读取前解析真实路径并校验位于工作区内，不跟随指向工作区外的符号链接。
 
 ## 已知限制
 
 - Python 3.11–3.14；CI 固定 3.12 作为稳定基线。
 - 真实 LLM 支持 DeepSeek（OpenAI 兼容）；工具调用通过 JSON 动作协议 + 解析器实现（`cah/actions/parser.py`），已被确定性测试覆盖。
 - 线上 demo 实例为 mock + 只读模式，用于演示审批流，不执行真实代码变更。
+- 线上 demo 接口无认证，且一次性 token 会出现在审批台响应中——仅用于演示场景，不应部署到真实敏感环境。
+- 动作解析以 JSON 协议为主，兼容常见 XML 工具调用标签；畸形/非标准标签会触发格式错误反馈并重试。MockLLM 一次性载入脚本（适合中小脚本）。
 - Render 免费档闲置 15 分钟休眠，首次访问需约 30–60 秒冷启动。
 - Windows 下 `shell` 工具使用系统默认解释器（cmd），命令 token 化按跨平台语义实现。
 

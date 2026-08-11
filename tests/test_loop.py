@@ -9,7 +9,7 @@ from cah.guardrails.command import CommandGuardrail
 from cah.guardrails.pipeline import GuardrailPipeline
 from cah.hitl.state_machine import HITLStateMachine
 from cah.llm.mock import MockLLM
-from cah.loop.agent import AgentLoop
+from cah.loop.agent import AgentLoop, HarnessContext
 from cah.memory.store import MemoryStore
 from cah.models import Feedback
 from cah.models import Action, LLMResponse
@@ -221,3 +221,91 @@ def test_loop_uses_native_tool_calls(tmp_path):
     r = loop.run("task")
     assert r.status == "done"
     assert (ws / "native.txt").read_text(encoding="utf-8") == "ok"
+
+
+def test_context_budget_truncates_old_events(tmp_path):
+    loop = _make_loop(tmp_path, [])
+    loop.context_budget_tokens = 40
+    events = [f"event-{i} " * 20 for i in range(10)]  # each ~180 chars
+    ctx = loop._build_context("task", events)
+    contents = " ".join(str(m.get("content", "")) for m in ctx)
+    assert "(earlier events truncated" in contents
+    kept_events = [m for m in ctx if str(m.get("content", "")).startswith("event-")]
+    assert len(kept_events) < 10
+
+
+def test_from_context_builds_equivalent_loop(tmp_path):
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    script = tmp_path / "script.jsonl"
+    script.write_text('{"text":"done","action":null,"done":true}\n', encoding="utf-8")
+    ctx = HarnessContext(
+        llm=MockLLM(script),
+        tools=ToolRegistry(sandbox=WorkspaceSandbox(ws, read_only=False)),
+        pipeline=GuardrailPipeline([]),
+        workspace=ws,
+        max_steps=3,
+        max_retries=0,
+    )
+    loop = AgentLoop.from_context(ctx)
+    assert loop.max_steps == 3 and loop.max_retries == 0
+    assert loop.tools is ctx.tools and loop.workspace == ws
+
+
+def test_full_pipeline_integration(workspace, registry, tmp_path):
+    """parser -> guardrails -> tools -> feedback -> retry -> converged done."""
+    script = tmp_path / "integration.jsonl"
+    script.write_text(
+        "\n".join(
+            json.dumps(s)
+            for s in [
+                {
+                    "text": '{"action": {"type": "write_file", "params": {"path": "x.py", "content": "print(1)"}}}',
+                    "action": None,
+                    "done": False,
+                },
+                {
+                    "text": '{"action": {"type": "shell", "params": {"command": "rm -rf /"}}}',
+                    "action": None,
+                    "done": False,
+                },
+                {
+                    "text": '{"action": {"type": "write_file", "params": {"path": "x.py", "content": "print(2)"}}}',
+                    "action": None,
+                    "done": False,
+                },
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    calls = {"n": 0}
+
+    class Converge:
+        def validate(self, ws):
+            calls["n"] += 1
+            ok = (ws / "x.py").read_text(encoding="utf-8") == "print(2)"
+            return Feedback(ok=ok, failures=[] if ok else ["wrong content"], summary="check x.py")
+
+    loop = AgentLoop(
+        llm=MockLLM(script),
+        tools=registry,
+        pipeline=GuardrailPipeline(
+            [CommandGuardrail(deny_patterns=["rm -rf"], allow_prefixes=[])]
+        ),
+        hitl=None,
+        validator=Converge(),
+        memory=None,
+        workspace=workspace,
+        max_steps=8,
+        max_retries=2,
+        approval_resolver=lambda i, t: "approve",
+    )
+    r = loop.run("task")
+    assert r.status == "done"
+    assert (workspace / "x.py").read_text(encoding="utf-8") == "print(2)"
+    events = [e.get("event") for e in r.actions_log]
+    assert "BLOCKED" in events
+    assert "FEEDBACK" in events
+    assert calls["n"] == 2

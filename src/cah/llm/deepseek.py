@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import httpx
 import json
+import time
 
 from cah.models import Action, LLMResponse
 
@@ -26,8 +27,12 @@ class DeepSeekLLM:
         model: str = "deepseek-chat",
         timeout_s: int = 60,
         transport: httpx.BaseTransport | None = None,
+        max_attempts: int = 3,
+        retry_delay_s: float = 1.0,
     ) -> None:
         self.model = model
+        self.max_attempts = max_attempts
+        self.retry_delay_s = retry_delay_s
         self._client = httpx.Client(
             base_url=base_url,
             headers={"Authorization": f"Bearer {api_key}"},
@@ -56,12 +61,19 @@ class DeepSeekLLM:
             ],
             "tool_choice": "auto",
         }
-        try:
-            resp = self._client.post("/chat/completions", json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-        except httpx.HTTPError as exc:
-            raise LLMError(f"DeepSeek API error: {exc}") from exc
+        last_error: Exception | None = None
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                resp = self._client.post("/chat/completions", json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+                break
+            except (httpx.HTTPError, ValueError) as exc:
+                last_error = exc
+                if attempt < self.max_attempts:
+                    time.sleep(self.retry_delay_s)
+        else:
+            raise LLMError(f"DeepSeek API error after {self.max_attempts} attempts: {last_error}") from last_error
         message = data["choices"][0]["message"]
         text = message.get("content") or ""
         actions: list[Action] = []

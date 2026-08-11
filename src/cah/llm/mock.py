@@ -29,7 +29,7 @@ class MockLLM:
                     ) from exc
         self._cursor = 0
 
-    def complete(self, context: list[dict], available_actions: list[dict]) -> LLMResponse:
+    def complete(self, context: list[dict], available_actions: list[str]) -> LLMResponse:
         if self._cursor >= len(self._steps):
             if self.loop:
                 self._cursor = 0

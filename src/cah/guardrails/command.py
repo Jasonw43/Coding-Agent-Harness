@@ -26,10 +26,10 @@ class CommandGuardrail:
                 risk_level="medium",
                 action_id=action.id,
             )
-        normalised = " ".join(tokens)
+        lowered = [t.lower() for t in tokens]
 
         for pattern in self.deny_patterns:
-            if pattern in normalised:
+            if self._tokens_contain(lowered, pattern):
                 return GuardrailDecision(
                     verdict="BLOCKED",
                     reason=f"Command matches deny pattern: {pattern!r}",
@@ -38,7 +38,7 @@ class CommandGuardrail:
                 )
 
         for prefix in self.allow_prefixes:
-            if normalised.startswith(prefix):
+            if self._tokens_start_with(lowered, prefix):
                 return GuardrailDecision(
                     verdict="SAFE",
                     reason="Command matches allow prefix",
@@ -52,3 +52,30 @@ class CommandGuardrail:
             risk_level="medium",
             action_id=action.id,
         )
+
+    @staticmethod
+    def _tokenize(pattern: str) -> list[str]:
+        try:
+            return [t.lower() for t in shlex.split(pattern)]
+        except ValueError:
+            return [pattern.lower()]
+
+    @classmethod
+    def _tokens_contain(cls, tokens: list[str], pattern: str) -> bool:
+        """Token-level deny matching (avoids substring false positives)."""
+        pat = cls._tokenize(pattern)
+        if not pat:
+            return False
+        if len(pat) == 1:
+            return pat[0] in tokens
+        # contiguous subsequence match for multi-word patterns like "rm -rf"
+        return any(
+            tokens[i : i + len(pat)] == pat for i in range(len(tokens) - len(pat) + 1)
+        )
+
+    @classmethod
+    def _tokens_start_with(cls, tokens: list[str], prefix: str) -> bool:
+        pat = cls._tokenize(prefix)
+        if not pat:
+            return True  # empty prefix allows everything (matches old startswith(""))
+        return tokens[: len(pat)] == pat

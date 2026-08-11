@@ -112,3 +112,21 @@ def test_pipeline_fail_closed_on_exception():
     p = GuardrailPipeline([Boom()])
     d = p.check(Action(id="a", type="read_file", params={}, run_id="r"), None)
     assert d.verdict == "BLOCKED"
+
+
+def test_deny_token_does_not_false_positive_on_substring():
+    g = CommandGuardrail(deny_patterns=["rm"], allow_prefixes=[])
+    d = g.check(
+        Action(id="a", type="shell", params={"command": "termtests --help"}, run_id="r"),
+        Path("."),
+    )
+    assert d.verdict != "BLOCKED"
+
+
+def test_deny_single_token_blocks_exact_token():
+    g = CommandGuardrail(deny_patterns=["sudo"], allow_prefixes=[])
+    d = g.check(
+        Action(id="a", type="shell", params={"command": "sudo apt update"}, run_id="r"),
+        Path("."),
+    )
+    assert d.verdict == "BLOCKED"

@@ -39,10 +39,17 @@ def install_tools(registry: ToolRegistry) -> None:
             return ToolResult(ok=False, output=f"invalid pattern: {exc}", meta={})
         matches: list[str] = []
         for p in base.rglob("*"):
-            if p.is_file():
+            try:
+                resolved = p.resolve()
+            except OSError:
+                continue
+            # never read through symlinks pointing outside the workspace
+            if resolved != sb.root and sb.root not in resolved.parents:
+                continue
+            if resolved.is_file():
                 try:
-                    if rx.search(p.read_text(encoding="utf-8", errors="ignore")):
-                        matches.append(str(p.relative_to(sb.root)))
+                    if rx.search(resolved.read_text(encoding="utf-8", errors="ignore")):
+                        matches.append(str(resolved.relative_to(sb.root)))
                 except OSError:
                     continue
         return ToolResult(ok=True, output="\n".join(matches[:200]), meta={"count": len(matches)})

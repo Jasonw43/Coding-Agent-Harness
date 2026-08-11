@@ -9,6 +9,12 @@ from dataclasses import dataclass
 from cah.models import Action
 
 _JSON_START_RE = re.compile(r"\{")
+_INVOKE_RE = re.compile(
+    r"<[^>]*invoke\s+name=[\"']([^\"']+)[\"'][^>]*>(.*?)</[^>]*invoke>", re.S
+)
+_PARAM_RE = re.compile(
+    r"<[^>]*parameter\s+name=[\"']([^\"']+)[\"'][^>]*>(.*?)</[^>]*parameter>", re.S
+)
 
 
 @dataclass
@@ -74,6 +80,18 @@ def parse_action(text: str, available_tools: list[str]) -> ParseResult:
                     "to write files you must emit a JSON action object like "
                     '{"action": {"type": "write_file", "params": {"path": "main.py", "content": "..."}}}'
                 )
+            )
+        invoke_match = _INVOKE_RE.search(raw)
+        if invoke_match:
+            tool_type = invoke_match.group(1)
+            body = invoke_match.group(2)
+            if tool_type not in available_tools:
+                return ParseResult(error=f"FORMAT_ERROR: unknown tool '{tool_type}'")
+            params = {
+                m.group(1): m.group(2).strip() for m in _PARAM_RE.finditer(body)
+            }
+            return ParseResult(
+                action=Action(id="", type=tool_type, params=params, run_id="")
             )
         return ParseResult(done=True, answer=raw)
 

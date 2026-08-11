@@ -39,3 +39,23 @@ def test_parse_unknown_tool_rejected():
     text = '{"action": {"type": "no_such_tool", "params": {}}}'
     parsed = parse_action(text, available_tools=["write_file"])
     assert parsed.error is not None and "no_such_tool" in parsed.error
+
+
+def test_parse_invoke_style_tool_call():
+    text = (
+        "I will create the file now.\n"
+        '<dsml:invoke name="write_file">\n'
+        '<dsml:parameter name="path">a.txt</dsml:parameter>\n'
+        '<dsml:parameter name="content">hi</dsml:parameter>\n'
+        "</dsml:invoke>"
+    )
+    parsed = parse_action(text, available_tools=["write_file"])
+    assert parsed.action is not None
+    assert parsed.action.type == "write_file"
+    assert parsed.action.params == {"path": "a.txt", "content": "hi"}
+
+
+def test_parse_invoke_style_unknown_tool():
+    text = '<dsml:invoke name="no_such_tool"><dsml:parameter name="x">1</dsml:parameter></dsml:invoke>'
+    parsed = parse_action(text, available_tools=["write_file"])
+    assert parsed.error is not None and "no_such_tool" in parsed.error

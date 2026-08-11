@@ -131,3 +131,27 @@ def test_loop_code_block_without_action_triggers_feedback(tmp_path):
     assert r.status == "done"
     assert (tmp_path / "ws" / "main.py").exists()
     assert any(e.get("event") == "FEEDBACK" for e in r.actions_log)
+
+
+def test_loop_parses_invoke_style_tool_call(tmp_path):
+    """Claude-style tool invocation tags are parsed and executed."""
+    loop = _make_loop(
+        tmp_path,
+        [
+            {
+                "text": (
+                    "Let me create the file.\n"
+                    '<dsml:invoke name="write_file">\n'
+                    '<dsml:parameter name="path">invoke.txt</dsml:parameter>\n'
+                    '<dsml:parameter name="content">ok</dsml:parameter>\n'
+                    "</dsml:invoke>"
+                ),
+                "action": None,
+                "done": False,
+            },
+            {"text": "done", "action": None, "done": False},
+        ],
+    )
+    r = loop.run("task")
+    assert r.status == "done"
+    assert (tmp_path / "ws" / "invoke.txt").read_text(encoding="utf-8") == "ok"

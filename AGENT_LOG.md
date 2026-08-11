@@ -134,3 +134,9 @@
 - 根因：`test_run_invalid_workspace_clean_error` 使用 `Q:\no_such_drive\ws`——Windows 下为不存在的盘符（预期失败），Linux 下反斜杠是普通字符、被当作相对路径成功创建，断言 `code == 2` 落空；属测试的平台依赖问题，非产品代码缺陷。
 - 修复：改用"父路径是文件"的失败场景（`tmp_path/blocker/ws`），全平台一致触发 `NotADirectoryError`；本地 73/73 绿，推送后 CI（`66702c8`）success。
 - 教训：CLI/路径类测试必须用跨平台路径构造（tmp_path + 文件占位），避免盘符/反斜杠语义差异；用户提供的 Actions 日志是定位平台差异的决定性证据。
+
+### T029 · 线上 demo 部署（Streamlit Community Cloud）
+- 内容：Render 与 Hugging Face（Docker/Gradio SDK）在新账户/本地区均需绑卡或付费，改为**免费免卡的 Streamlit Community Cloud**：抽出与 Gradio 无关的 `src/cah/web/hf_console.py`（DemoConsole：start/decide/pending/events，线程级测试 74/74 绿），新增 `streamlit_app.py` 薄 UI + `requirements.txt`。
+- 线上地址：<https://jasonw43-coding-agent-harness-streamlit-app-gpxdmb.streamlit.app/>（已验证 HTTP 200）。
+- 部署模式：mock LLM + 只读沙箱，演示"危险动作 → 人工审批 → 完成"闭环。
+- 教训：免费部署平台政策变动频繁（Render/HF 均需卡），选型时优先"GitHub 直连 + 免费免卡"的平台，并把 UI 与核心逻辑解耦以便切换前端壳。

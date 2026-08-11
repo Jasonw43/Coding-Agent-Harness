@@ -56,7 +56,7 @@ HARNESS_DEMO=1 uvicorn cah.web.app:app --host 0.0.0.0 --port 8000
 
 浏览器打开 `http://localhost:8000`，点击"启动演示运行"，即可看到 agent 尝试危险动作、等待人工审批的完整流程。
 
-线上 demo 实例：项目提供 `Dockerfile`（Hugging Face Spaces / Render 均可用），容器内以 demo 模式启动，端口 7860。
+线上 demo 实例（免卡免费）：`streamlit_app.py` 提供审批台 UI（mock LLM + 只读沙箱），部署到 Streamlit Community Cloud（GitHub 仓库直连，免费）。项目另提供 `Dockerfile` 支持容器部署（Render 等，端口 7860）。
 
 ## Key 安全配置
 

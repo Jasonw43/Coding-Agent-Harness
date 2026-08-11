@@ -128,3 +128,9 @@
   5. **starlette/httpx 兼容性警告（噪声，不影响功能）**：建议的 "httpx2" 并非真实包 → pytest 配置按消息过滤，输出干净。
 - 全量 73/73 绿，警告清零。
 - 教训：用户评审抓到了真实设计缺陷（审批闭环未打通、默认安全策略缺失），这类问题 mock 全绿也发现不了。
+
+### T028 · GitHub Actions CI 失败排查与修复
+- 技能：gh-fix-ci（经公开 API 诊断；日志需认证，由用户提供 Actions 失败段）。
+- 根因：`test_run_invalid_workspace_clean_error` 使用 `Q:\no_such_drive\ws`——Windows 下为不存在的盘符（预期失败），Linux 下反斜杠是普通字符、被当作相对路径成功创建，断言 `code == 2` 落空；属测试的平台依赖问题，非产品代码缺陷。
+- 修复：改用"父路径是文件"的失败场景（`tmp_path/blocker/ws`），全平台一致触发 `NotADirectoryError`；本地 73/73 绿，推送后 CI（`66702c8`）success。
+- 教训：CLI/路径类测试必须用跨平台路径构造（tmp_path + 文件占位），避免盘符/反斜杠语义差异；用户提供的 Actions 日志是定位平台差异的决定性证据。

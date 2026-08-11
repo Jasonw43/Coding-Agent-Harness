@@ -59,3 +59,15 @@ def test_parse_invoke_style_unknown_tool():
     text = '<dsml:invoke name="no_such_tool"><dsml:parameter name="x">1</dsml:parameter></dsml:invoke>'
     parsed = parse_action(text, available_tools=["write_file"])
     assert parsed.error is not None and "no_such_tool" in parsed.error
+
+
+def test_parse_multiple_actions_in_one_reply():
+    text = (
+        '{"action": {"type": "write_file", "params": {"path": "a.txt", "content": "1"}}}\n'
+        '{"action": {"type": "write_file", "params": {"path": "b.txt", "content": "2"}}}\n'
+        '{"action": {"type": "run_tests"}}'
+    )
+    parsed = parse_action(text, available_tools=["write_file", "run_tests"])
+    assert parsed.error is None
+    assert len(parsed.actions) == 3
+    assert [a.type for a in parsed.actions] == ["write_file", "write_file", "run_tests"]

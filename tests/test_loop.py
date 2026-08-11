@@ -155,3 +155,24 @@ def test_loop_parses_invoke_style_tool_call(tmp_path):
     r = loop.run("task")
     assert r.status == "done"
     assert (tmp_path / "ws" / "invoke.txt").read_text(encoding="utf-8") == "ok"
+
+
+def test_loop_executes_multiple_actions_in_one_reply(tmp_path):
+    loop = _make_loop(
+        tmp_path,
+        [
+            {
+                "text": (
+                    '{"action": {"type": "write_file", "params": {"path": "a.txt", "content": "1"}}}\n'
+                    '{"action": {"type": "write_file", "params": {"path": "b.txt", "content": "2"}}}'
+                ),
+                "action": None,
+                "done": False,
+            },
+            {"text": "done", "action": None, "done": False},
+        ],
+    )
+    r = loop.run("task")
+    assert r.status == "done"
+    assert (tmp_path / "ws" / "a.txt").read_text(encoding="utf-8") == "1"
+    assert (tmp_path / "ws" / "b.txt").read_text(encoding="utf-8") == "2"

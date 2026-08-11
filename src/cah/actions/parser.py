@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from cah.models import Action
 
@@ -20,17 +20,14 @@ _PARAM_RE = re.compile(
 @dataclass
 class ParseResult:
     action: Action | None = None
+    actions: list[Action] = field(default_factory=list)
     done: bool = False
     answer: str | None = None
     error: str | None = None
 
 
-def _extract_json(text: str) -> str | None:
-    """Return the first balanced JSON object found in the text, if any."""
-    match = _JSON_START_RE.search(text)
-    if not match:
-        return None
-    start = match.start()
+def _extract_balanced(text: str, start: int) -> str | None:
+    """Return the balanced JSON object starting at ``start``, if any."""
     depth = 0
     in_string = False
     escape = False
@@ -55,6 +52,25 @@ def _extract_json(text: str) -> str | None:
     return None
 
 
+def _interpret_payload(
+    payload: object, raw: str, available_tools: list[str]
+) -> ParseResult:
+    if not isinstance(payload, dict):
+        return ParseResult(error="FORMAT_ERROR: action payload must be a JSON object")
+    if payload.get("done") is True:
+        return ParseResult(done=True, answer=str(payload.get("answer", raw)))
+    action_obj = payload.get("action") if isinstance(payload.get("action"), dict) else payload
+    tool_type = action_obj.get("type") if isinstance(action_obj, dict) else None
+    if not isinstance(tool_type, str) or not tool_type:
+        return ParseResult(error="FORMAT_ERROR: action object missing 'type'")
+    if tool_type not in available_tools:
+        return ParseResult(error=f"FORMAT_ERROR: unknown tool '{tool_type}'")
+    params = action_obj.get("params", {})
+    if not isinstance(params, dict):
+        return ParseResult(error="FORMAT_ERROR: action 'params' must be an object")
+    return ParseResult(action=Action(id="", type=tool_type, params=params, run_id=""))
+
+
 def parse_action(text: str, available_tools: list[str]) -> ParseResult:
     """Interpret a model response.
 
@@ -69,50 +85,47 @@ def parse_action(text: str, available_tools: list[str]) -> ParseResult:
     if not raw:
         return ParseResult(done=True, answer="")
 
-    obj_text = _extract_json(raw)
-    if obj_text is None:
-        if raw.startswith("{"):
+    actions: list[Action] = []
+    pos = 0
+    while True:
+        match = _JSON_START_RE.search(raw, pos)
+        if not match:
+            break
+        obj_text = _extract_balanced(raw, match.start())
+        if obj_text is None:
             return ParseResult(error="FORMAT_ERROR: unbalanced JSON object")
-        if "```" in raw:
-            return ParseResult(
-                error=(
-                    "FORMAT_ERROR: code blocks in the reply are not allowed; "
-                    "to write files you must emit a JSON action object like "
-                    '{"action": {"type": "write_file", "params": {"path": "main.py", "content": "..."}}}'
-                )
+        try:
+            payload = json.loads(obj_text)
+        except json.JSONDecodeError as exc:
+            return ParseResult(error=f"FORMAT_ERROR: invalid JSON action: {exc}")
+        result = _interpret_payload(payload, raw, available_tools)
+        if result.error:
+            return result
+        if result.done:
+            return result
+        assert result.action is not None
+        actions.append(result.action)
+        pos = match.start() + len(obj_text)
+
+    for invoke_match in _INVOKE_RE.finditer(raw):
+        tool_type = invoke_match.group(1)
+        if tool_type not in available_tools:
+            return ParseResult(error=f"FORMAT_ERROR: unknown tool '{tool_type}'")
+        body = invoke_match.group(2)
+        params = {m.group(1): m.group(2).strip() for m in _PARAM_RE.finditer(body)}
+        actions.append(Action(id="", type=tool_type, params=params, run_id=""))
+
+    if actions:
+        return ParseResult(actions=actions, action=actions[0])
+
+    if raw.startswith("{"):
+        return ParseResult(error="FORMAT_ERROR: unbalanced JSON object")
+    if "```" in raw:
+        return ParseResult(
+            error=(
+                "FORMAT_ERROR: code blocks in the reply are not allowed; "
+                "to write files you must emit a JSON action object like "
+                '{"action": {"type": "write_file", "params": {"path": "main.py", "content": "..."}}}'
             )
-        invoke_match = _INVOKE_RE.search(raw)
-        if invoke_match:
-            tool_type = invoke_match.group(1)
-            body = invoke_match.group(2)
-            if tool_type not in available_tools:
-                return ParseResult(error=f"FORMAT_ERROR: unknown tool '{tool_type}'")
-            params = {
-                m.group(1): m.group(2).strip() for m in _PARAM_RE.finditer(body)
-            }
-            return ParseResult(
-                action=Action(id="", type=tool_type, params=params, run_id="")
-            )
-        return ParseResult(done=True, answer=raw)
-
-    try:
-        payload = json.loads(obj_text)
-    except json.JSONDecodeError as exc:
-        return ParseResult(error=f"FORMAT_ERROR: invalid JSON action: {exc}")
-
-    if not isinstance(payload, dict):
-        return ParseResult(error="FORMAT_ERROR: action payload must be a JSON object")
-
-    if payload.get("done") is True:
-        return ParseResult(done=True, answer=str(payload.get("answer", raw)))
-
-    action_obj = payload.get("action") if isinstance(payload.get("action"), dict) else payload
-    tool_type = action_obj.get("type") if isinstance(action_obj, dict) else None
-    if not isinstance(tool_type, str) or not tool_type:
-        return ParseResult(error="FORMAT_ERROR: action object missing 'type'")
-    if tool_type not in available_tools:
-        return ParseResult(error=f"FORMAT_ERROR: unknown tool '{tool_type}'")
-    params = action_obj.get("params", {})
-    if not isinstance(params, dict):
-        return ParseResult(error="FORMAT_ERROR: action 'params' must be an object")
-    return ParseResult(action=Action(id="", type=tool_type, params=params, run_id=""))
+        )
+    return ParseResult(done=True, answer=raw)

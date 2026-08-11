@@ -102,7 +102,7 @@ class AgentLoop:
                 break
 
             if response.action is not None:
-                action = response.action
+                actions = [response.action]
             elif response.done:
                 # mock-style structured completion
                 status, retries = self._decide_done(
@@ -136,45 +136,49 @@ class AgentLoop:
                     if status == "continue":
                         continue
                     break
-                action = parsed.action
-            if not action.id:
-                action.id = f"{run_id}-s{step}"
-            action.run_id = run_id
+                actions = parsed.actions
 
-            decision = self.pipeline.check(action, self.workspace)
+            for action in actions:
+                if not action.id:
+                    action.id = f"{run_id}-s{step}"
+                action.run_id = run_id
 
-            if decision.verdict == "BLOCKED":
-                msg = f"BLOCKED: {decision.reason} (action={action.id})"
-                event_texts.append(msg)
-                events.append(
-                    {
-                        "step": step,
-                        "event": "BLOCKED",
-                        "reason": decision.reason,
-                        "action": action.id,
-                    }
+                decision = self.pipeline.check(action, self.workspace)
+
+                if decision.verdict == "BLOCKED":
+                    msg = f"BLOCKED: {decision.reason} (action={action.id})"
+                    event_texts.append(msg)
+                    events.append(
+                        {
+                            "step": step,
+                            "event": "BLOCKED",
+                            "reason": decision.reason,
+                            "action": action.id,
+                        }
+                    )
+                    continue
+
+                if decision.verdict == "REQUIRE_APPROVAL":
+                    if self.hitl is None:
+                        msg = f"REJECTED: no approval channel (action={action.id})"
+                        event_texts.append(msg)
+                        events.append({"step": step, "event": "REJECTED", "action": action.id})
+                        continue
+                    record, token = self.hitl.submit(action.id, decision.reason)
+                    if self.approval_resolver(action.id, token) != "approved":
+                        msg = f"REJECTED by user: {decision.reason} (action={action.id})"
+                        event_texts.append(msg)
+                        events.append({"step": step, "event": "REJECTED", "action": action.id})
+                        continue
+                    # approved: fall through to execute the action
+
+                result = self.tools.dispatch(action.type, action.params)
+                event_texts.append(
+                    f"TOOL {action.type} -> ok={result.ok}: {result.output[:500]}"
                 )
-                continue
-
-            if decision.verdict == "REQUIRE_APPROVAL":
-                if self.hitl is None:
-                    msg = f"REJECTED: no approval channel (action={action.id})"
-                    event_texts.append(msg)
-                    events.append({"step": step, "event": "REJECTED", "action": action.id})
-                    continue
-                record, token = self.hitl.submit(action.id, decision.reason)
-                if self.approval_resolver(action.id, token) != "approved":
-                    msg = f"REJECTED by user: {decision.reason} (action={action.id})"
-                    event_texts.append(msg)
-                    events.append({"step": step, "event": "REJECTED", "action": action.id})
-                    continue
-                # approved: fall through to execute the action
-
-            result = self.tools.dispatch(action.type, action.params)
-            event_texts.append(f"TOOL {action.type} -> ok={result.ok}: {result.output[:500]}")
-            events.append(
-                {"step": step, "event": "TOOL", "tool": action.type, "ok": result.ok}
-            )
+                events.append(
+                    {"step": step, "event": "TOOL", "tool": action.type, "ok": result.ok}
+                )
 
             # feedback loop: validate after the action
             fb = self._validate()

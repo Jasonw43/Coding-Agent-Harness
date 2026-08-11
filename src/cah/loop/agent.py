@@ -101,7 +101,9 @@ class AgentLoop:
                 events.append({"step": step, "event": "STOP", "reason": "script exhausted"})
                 break
 
-            if response.action is not None:
+            if response.actions:
+                actions = response.actions
+            elif response.action is not None:
                 actions = [response.action]
             elif response.done:
                 # mock-style structured completion

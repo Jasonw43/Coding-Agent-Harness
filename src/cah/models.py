@@ -51,6 +51,7 @@ class LLMResponse:
     text: str
     action: Action | None
     done: bool
+    actions: list[Action] | None = None
 
 
 @dataclass

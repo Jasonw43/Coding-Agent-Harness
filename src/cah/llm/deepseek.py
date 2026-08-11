@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import httpx
+import json
 
-from cah.models import LLMResponse
+from cah.models import Action, LLMResponse
 
 
 class LLMError(Exception):
@@ -39,12 +40,46 @@ class DeepSeekLLM:
             {"role": m.get("role", "user"), "content": str(m.get("content", ""))}
             for m in context
         ]
-        payload = {"model": self.model, "messages": messages}
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "description": f"{name} tool",
+                        "parameters": {"type": "object", "properties": {}},
+                    },
+                }
+                for name in available_actions
+            ],
+            "tool_choice": "auto",
+        }
         try:
             resp = self._client.post("/chat/completions", json=payload)
             resp.raise_for_status()
             data = resp.json()
         except httpx.HTTPError as exc:
             raise LLMError(f"DeepSeek API error: {exc}") from exc
-        text = data["choices"][0]["message"]["content"]
-        return LLMResponse(text=text, action=None, done=False)
+        message = data["choices"][0]["message"]
+        text = message.get("content") or ""
+        actions: list[Action] = []
+        for call in message.get("tool_calls") or []:
+            fn = call.get("function", {})
+            name = fn.get("name", "")
+            if name not in available_actions:
+                continue
+            try:
+                args = json.loads(fn.get("arguments") or "{}")
+            except json.JSONDecodeError:
+                args = {}
+            if not isinstance(args, dict):
+                args = {}
+            actions.append(Action(id="", type=name, params=args, run_id=""))
+        return LLMResponse(
+            text=text,
+            action=actions[0] if actions else None,
+            actions=actions or None,
+            done=False,
+        )

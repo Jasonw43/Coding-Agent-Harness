@@ -12,6 +12,7 @@ from cah.llm.mock import MockLLM
 from cah.loop.agent import AgentLoop
 from cah.memory.store import MemoryStore
 from cah.models import Feedback
+from cah.models import Action, LLMResponse
 
 
 def _make_loop(tmp_path, script, approval="approve"):
@@ -176,3 +177,47 @@ def test_loop_executes_multiple_actions_in_one_reply(tmp_path):
     assert r.status == "done"
     assert (tmp_path / "ws" / "a.txt").read_text(encoding="utf-8") == "1"
     assert (tmp_path / "ws" / "b.txt").read_text(encoding="utf-8") == "2"
+
+
+def test_loop_uses_native_tool_calls(tmp_path):
+    """Structured tool_calls from the LLM client are executed directly."""
+    ws = tmp_path / "ws"
+    ws.mkdir()
+
+    class NativeLLM:
+        def __init__(self):
+            self.calls = 0
+
+        def complete(self, context, available_actions):
+            self.calls += 1
+            if self.calls == 1:
+                return LLMResponse(
+                    text="",
+                    action=None,
+                    done=False,
+                    actions=[
+                        Action(
+                            id="",
+                            type="write_file",
+                            params={"path": "native.txt", "content": "ok"},
+                            run_id="",
+                        )
+                    ],
+                )
+            return LLMResponse(text="finished", action=None, done=True)
+
+    loop = AgentLoop(
+        llm=NativeLLM(),
+        tools=ToolRegistry(sandbox=WorkspaceSandbox(ws, read_only=False)),
+        pipeline=GuardrailPipeline([]),
+        hitl=None,
+        validator=None,
+        memory=None,
+        workspace=ws,
+        max_steps=5,
+        max_retries=1,
+        approval_resolver=lambda i, t: "approve",
+    )
+    r = loop.run("task")
+    assert r.status == "done"
+    assert (ws / "native.txt").read_text(encoding="utf-8") == "ok"

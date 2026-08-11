@@ -34,3 +34,11 @@ def test_mock_llm_loop_wraps(tmp_path):
     llm = MockLLM(script_path=p, loop=True)
     assert llm.complete(context=[], available_actions=[]).text == "again"
     assert llm.complete(context=[], available_actions=[]).text == "again"
+
+
+def test_mock_llm_tolerates_bom(tmp_path):
+    p = tmp_path / "bom.jsonl"
+    p.write_bytes(b"\xef\xbb\xbf" + b'{"text":"ok","action":null,"done":true}\n')
+    llm = MockLLM(script_path=p)
+    resp = llm.complete(context=[], available_actions=[])
+    assert resp.done and resp.text == "ok"

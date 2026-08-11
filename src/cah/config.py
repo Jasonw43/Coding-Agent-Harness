@@ -16,7 +16,18 @@ class HarnessConfig:
     max_steps: int = 10
     approval_timeout_s: int = 300
     max_retries: int = 3
-    deny_patterns: list[str] = field(default_factory=list)
+    deny_patterns: list[str] = field(
+        default_factory=lambda: [
+            "rm -rf",
+            "DROP DATABASE",
+            "git push",
+            "curl | sh",
+            "sudo",
+            "chmod 777",
+            "format ",
+            "del /f /s /q",
+        ]
+    )
     allow_prefixes: list[str] = field(default_factory=list)
     tools_enabled: list[str] = field(default_factory=list)
     validators: list[str] = field(default_factory=list)

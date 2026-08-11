@@ -6,6 +6,7 @@ import argparse
 import getpass
 import json
 import sys
+import time
 from pathlib import Path
 
 from cah.actions.registry import ToolRegistry
@@ -67,6 +68,29 @@ def _hitl(workspace: Path, timeout_s: int = 300) -> HITLStateMachine:
     return HITLStateMachine(_harness_dir(workspace) / "approvals.json", timeout_s=timeout_s)
 
 
+def wait_for_decision(
+    action_id: str, store_path: Path, timeout_s: int, notify=None
+) -> str:
+    """Block until the approval record leaves PENDING; return the verdict.
+
+    Polls the JSON store on disk so decisions made by ``cah approve/reject``
+    in another process are visible. On timeout the action is rejected
+    (fail-safe).
+    """
+    if notify is not None:
+        notify(action_id)
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        record = HITLStateMachine(store_path, timeout_s=timeout_s).get(action_id)
+        if record is not None:
+            if record.state == "APPROVED":
+                return "approved"
+            if record.state in ("REJECTED", "EXPIRED", "CANCELED"):
+                return "rejected"
+        time.sleep(0.2)
+    return "rejected"
+
+
 def _load_or_default(workspace: Path) -> HarnessConfig:
     cfg_path = workspace / "harness.toml"
     if cfg_path.exists():
@@ -121,7 +145,28 @@ def _cmd_run(args: argparse.Namespace) -> int:
         model = config.model if config.model != "mock" else "deepseek-chat"
         llm = DeepSeekLLM(api_key=key, model=model)
 
-    resolver = (lambda i, t: "approved") if args.auto_approve else (lambda i, t: "rejected")
+    if args.auto_approve:
+
+        def resolver(action_id: str, token: str) -> str:
+            return "approved"
+
+    else:
+        store_path = _harness_dir(workspace) / "approvals.json"
+
+        def notify(action_id: str) -> None:
+            print(f"action {action_id} requires approval; waiting...", flush=True)
+
+        def resolver(action_id: str, token: str) -> str:
+            print(f"  one-time token for {action_id}: {token}", flush=True)
+            print(f"  approve: cah approve {action_id} --token {token}", flush=True)
+            print(f"  reject:  cah reject {action_id} --token {token}", flush=True)
+            print("  waiting for your decision...", flush=True)
+            return wait_for_decision(
+                action_id,
+                store_path,
+                timeout_s=config.approval_timeout_s,
+                notify=notify,
+            )
     loop = AgentLoop(
         llm=llm,
         tools=tools,

@@ -38,7 +38,7 @@ cah demo
 cah key set
 cah run "实现一个函数并补测试"
 
-# HITL 审批与状态查看
+# HITL 审批与状态查看（运行中会打印待审动作的一次性 token）
 cah status
 cah approve <action-id> --token <token>
 cah reject <action-id> --token <token>
@@ -105,7 +105,7 @@ demo/mechanism_demo.py  # 三个必需行为的机制演示
 - **命令护栏**：黑名单（`rm -rf`、`DROP DATABASE`、`git push`、`curl|sh`、`sudo` 等）+ 白名单前缀；未匹配命令默认转人工审批。
 - **只读模式**：`--read-only` / demo 模式禁用写文件与 shell。
 - **fail-closed**：护栏自身出错时按拒绝处理。
-- **HITL**：危险动作进入 `PENDING`，人工批准/拒绝/超时（超时默认拒绝）；一次性 token + SHA-256 存储。
+- **HITL**：`cah run` 遇到需审批动作时会打印一次性 token 和审批命令，循环等待你的决定；可在另一个终端 `cah approve <id> --token <token>` 批准或 `cah reject` 拒绝，超时默认拒绝；token 以 SHA-256 存储、一次性有效。
 
 ## 已知限制
 

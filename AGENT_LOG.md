@@ -117,3 +117,14 @@
 - 内容：为真实模式补齐 harness 的核心一环——模型输出解析成动作并经过护栏执行：新增 `actions/parser.py`（JSON 动作提取/解析、显式 done、格式错误与未知工具反馈）；`loop/agent.py` 对无结构化动作的响应调用解析器并回灌格式错误（有界重试）；`DeepSeekLLM` 改为返回原始文本（`done=False`）由循环解析；系统提示加入 JSON 动作协议说明。
 - 测试：新增 `tests/test_parser.py`（5 例）+ 主循环真实风格脚本化用例（文本内 JSON 动作 → 文件真实写入 → 收敛 done）；全量 58/58 绿。
 - 意义：真实模型从"只问答"升级为"可调用工具干活"，与 mock 共享同一护栏/反馈/停机机制。
+
+### T027 · 用户代码评审 5 条意见的核实与修复
+- 技能：receiving-code-review（逐条核实后实施）。
+- 核实结论与修复：
+  1. **CLI 审批死锁（属实，阻塞）**：token 只在循环内生成、从未暴露 → 新增 `wait_for_decision`（轮询磁盘审批状态）+ `cah run` 打印一次性 token 与审批命令并等待；线程级红测覆盖批准/超时两路径。
+  2. **缺 `__main__.py`（属实）**：`python -m cah` 无法运行 → 新增入口，子进程冒烟测试。
+  3. **默认配置无安全策略（属实，安全）**：`deny_patterns` 默认空列表，`--auto-approve` 下危险命令可执行 → 默认内置 `rm -rf`/`DROP DATABASE`/`git push`/`curl | sh`/`sudo`/`chmod 777` 等黑名单 + 测试。
+  4. **Mock JSONL BOM（属实）**：PowerShell `Set-Content` 写出的 BOM 导致 `json.loads` 失败 → `MockLLM` 改 `utf-8-sig` 读取 + BOM 测试。
+  5. **starlette/httpx 兼容性警告（噪声，不影响功能）**：建议的 "httpx2" 并非真实包 → pytest 配置按消息过滤，输出干净。
+- 全量 73/73 绿，警告清零。
+- 教训：用户评审抓到了真实设计缺陷（审批闭环未打通、默认安全策略缺失），这类问题 mock 全绿也发现不了。

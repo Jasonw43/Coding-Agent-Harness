@@ -16,7 +16,7 @@ class MockLLM:
         self.script_path = Path(script_path)
         self.loop = loop
         self._steps: list[dict[str, Any]] = []
-        with self.script_path.open("r", encoding="utf-8") as f:
+        with self.script_path.open("r", encoding="utf-8-sig") as f:
             for line_no, line in enumerate(f, start=1):
                 line = line.strip()
                 if not line:

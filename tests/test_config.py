@@ -35,3 +35,9 @@ def test_load_returns_harness_config(tmp_path):
     p = tmp_path / "harness.toml"
     p.write_text("", encoding="utf-8")
     assert isinstance(load_config(p), HarnessConfig)
+
+
+def test_default_config_has_security_denylist():
+    cfg = HarnessConfig()
+    assert "rm -rf" in cfg.deny_patterns
+    assert "DROP DATABASE" in cfg.deny_patterns

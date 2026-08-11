@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import streamlit as st
 
 from cah.web.hf_console import DemoConsole
@@ -17,7 +19,11 @@ if "run_id" not in st.session_state:
 
 if st.button("启动演示运行"):
     st.session_state.run_id = console.start_demo()
-    st.success(f"demo 已启动：{st.session_state.run_id}（待审批动作出现后可批准/拒绝）")
+    time.sleep(2)  # give the demo thread time to submit the approval
+    st.success(f"demo 已启动：{st.session_state.run_id}（如下表仍为空，点『刷新』）")
+
+if st.button("刷新"):
+    st.rerun()
 
 st.subheader("待审批动作")
 pending = console.pending()

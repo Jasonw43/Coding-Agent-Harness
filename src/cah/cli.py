@@ -82,7 +82,14 @@ def _cmd_run(args: argparse.Namespace) -> int:
     config = _load_or_default(workspace)
     read_only = args.read_only or config.read_only
 
-    sandbox = WorkspaceSandbox(workspace, read_only=read_only)
+    try:
+        sandbox = WorkspaceSandbox(workspace, read_only=read_only)
+    except OSError as exc:
+        print(
+            f"error: cannot create/use workspace {workspace}: {exc}",
+            file=sys.stderr,
+        )
+        return 2
     tools = ToolRegistry(sandbox=sandbox)
     enabled = config.tools_enabled or tools.names()
     pipeline = GuardrailPipeline(

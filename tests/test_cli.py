@@ -23,3 +23,9 @@ def test_mock_run_smoke(tmp_path, capsys):
     code = main(["run", "--mock", "--workspace", str(tmp_path), "hello task"])
     out = capsys.readouterr().out
     assert code == 0 and "done" in out.lower()
+
+
+def test_run_invalid_workspace_clean_error(capsys):
+    code = main(["run", "--mock", "--workspace", "Q:\\no_such_drive\\ws", "task"])
+    err = capsys.readouterr().err
+    assert code == 2 and "workspace" in err.lower()

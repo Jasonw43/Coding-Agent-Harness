@@ -140,3 +140,7 @@
 - 线上地址：<https://jasonw43-coding-agent-harness-streamlit-app-gpxdmb.streamlit.app/>（已验证 HTTP 200）。
 - 部署模式：mock LLM + 只读沙箱，演示"危险动作 → 人工审批 → 完成"闭环。
 - 教训：免费部署平台政策变动频繁（Render/HF 均需卡），选型时优先"GitHub 直连 + 免费免卡"的平台，并把 UI 与核心逻辑解耦以便切换前端壳。
+
+### T030 · NJU GitLab 提交与 unit-test CI 通过
+- 内容：用户创建 NJU GitLab 私有项目（`https://git.nju.edu.cn/Jason43/coding-agent-harness`）；推送需细粒度令牌（`Repository → Code: Push` 权限，首次 403 后补齐）；`.gitlab-ci.yml` 的 `unit-test` job 在 GitLab 流水线中通过。
+- 至此课程交付清单全部落地：SPEC/PLAN/SPEC_PROCESS/源码/README/AGENT_LOG/双 CI（GitHub Actions + GitLab unit-test）/线上 WebUI URL；仅剩 `REFLECTION.md`（学生本人撰写）。

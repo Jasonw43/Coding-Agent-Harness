@@ -178,4 +178,5 @@
 
 ### 7.4 待补
 
-- GitHub 公开仓库推送与 PR 历史（进行中）；Render demo 部署（待用户注册完成）；`REFLECTION.md`（1500–2500 字，学生本人撰写）；最终 CI 执行记录（pass）；`AGENT_LOG.md`/本文档最终回填。
+- 已全部完成：GitHub 公开仓库推送与 CI（Actions success）；NJU GitLab 提交且 `unit-test` job 通过；线上 demo（Streamlit Cloud）可访问；`AGENT_LOG.md`/本文档持续回填。
+- 仅剩：`REFLECTION.md`（1500–2500 字，学生本人撰写，可用 AI 辅助润色并标注）。

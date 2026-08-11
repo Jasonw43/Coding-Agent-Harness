@@ -107,3 +107,27 @@ def test_loop_parses_real_style_json_actions(tmp_path):
     assert r.status == "done"
     assert (tmp_path / "ws" / "x.py").read_text(encoding="utf-8") == "print(1)"
     assert r.final_output == "wrote the file and finished"
+
+
+def test_loop_code_block_without_action_triggers_feedback(tmp_path):
+    """A code-block answer without an action must be fed back as a format error."""
+    loop = _make_loop(
+        tmp_path,
+        [
+            {
+                "text": '```python\ndef add_big(a, b):\n    return a + b\n```',
+                "action": None,
+                "done": False,
+            },
+            {
+                "text": '{"action": {"type": "write_file", "params": {"path": "main.py", "content": "def add_big(a, b): return a+b"}}}',
+                "action": None,
+                "done": False,
+            },
+            {"text": "created main.py", "action": None, "done": False},
+        ],
+    )
+    r = loop.run("task")
+    assert r.status == "done"
+    assert (tmp_path / "ws" / "main.py").exists()
+    assert any(e.get("event") == "FEEDBACK" for e in r.actions_log)

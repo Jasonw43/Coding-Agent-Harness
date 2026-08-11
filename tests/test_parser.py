@@ -18,6 +18,12 @@ def test_parse_plain_text_is_done():
     assert parsed.answer == "I finished the task. Here is the summary."
 
 
+def test_parse_code_block_without_action_is_error():
+    text = 'Here is the code:\n```python\ndef add_big(a, b):\n    return a + b\n```'
+    parsed = parse_action(text, available_tools=["write_file"])
+    assert parsed.error is not None and "code" in parsed.error.lower()
+
+
 def test_parse_explicit_done_object():
     text = '{"done": true, "answer": "all tests pass"}'
     parsed = parse_action(text, available_tools=[])

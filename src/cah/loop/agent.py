@@ -58,6 +58,8 @@ class AgentLoop:
                     "You are a coding agent running inside a harness. "
                     "To use a tool, reply ONLY with a JSON object like "
                     '{"action": {"type": "write_file", "params": {"path": "a.txt", "content": "x"}}}. '
+                    "NEVER paste code or file contents in your reply; file contents "
+                    "go inside the action params. "
                     "When the task is complete, reply with plain text (your final answer). "
                     f"Available tools: {', '.join(self.tools.names())}. "
                     "You may receive feedback about failed validations; adjust accordingly."

@@ -67,6 +67,14 @@ def parse_action(text: str, available_tools: list[str]) -> ParseResult:
     if obj_text is None:
         if raw.startswith("{"):
             return ParseResult(error="FORMAT_ERROR: unbalanced JSON object")
+        if "```" in raw:
+            return ParseResult(
+                error=(
+                    "FORMAT_ERROR: code blocks in the reply are not allowed; "
+                    "to write files you must emit a JSON action object like "
+                    '{"action": {"type": "write_file", "params": {"path": "main.py", "content": "..."}}}'
+                )
+            )
         return ParseResult(done=True, answer=raw)
 
     try:

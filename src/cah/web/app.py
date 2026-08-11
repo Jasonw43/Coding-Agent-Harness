@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -170,7 +171,12 @@ def create_app(store_dir: str | Path, demo: bool = True) -> FastAPI:
     return app
 
 
-app = create_app(
-    store_dir=os.environ.get("CAH_STORE_DIR", ".harness-web"),
-    demo=os.environ.get("HARNESS_DEMO", "1") == "1",
-)
+_store_dir = os.environ.get("CAH_STORE_DIR", ".harness-web")
+try:
+    app = create_app(store_dir=_store_dir, demo=os.environ.get("HARNESS_DEMO", "1") == "1")
+except OSError:
+    # fall back to a writable temp location instead of crashing at import
+    app = create_app(
+        store_dir=os.path.join(tempfile.gettempdir(), "cah-web"),
+        demo=os.environ.get("HARNESS_DEMO", "1") == "1",
+    )

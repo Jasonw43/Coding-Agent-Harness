@@ -27,4 +27,4 @@ def test_deepseek_complete_returns_text():
     resp = llm.complete(
         context=[{"role": "user", "content": "hi"}], available_actions=[]
     )
-    assert resp.text == "hello from deepseek" and resp.done
+    assert resp.text == "hello from deepseek" and resp.done is False

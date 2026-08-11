@@ -14,8 +14,8 @@ class LLMError(Exception):
 class DeepSeekLLM:
     """Minimal real-LLM client.
 
-    Current limitation: returns the model's final text (done=true) without
-    tool-use parsing; deterministic mock-driven behavior is the tested path.
+    Returns raw text with done=False; the harness loop parses the tool
+    protocol (JSON actions) and decides when the task is complete.
     """
 
     def __init__(
@@ -47,4 +47,4 @@ class DeepSeekLLM:
         except httpx.HTTPError as exc:
             raise LLMError(f"DeepSeek API error: {exc}") from exc
         text = data["choices"][0]["message"]["content"]
-        return LLMResponse(text=text, action=None, done=True)
+        return LLMResponse(text=text, action=None, done=False)

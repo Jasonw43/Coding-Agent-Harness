@@ -111,3 +111,9 @@
 - 内容：演示 `cah run`（真实 DeepSeek）时发现：① 模型直接返回答案时文本被丢弃（`final_output` 为空）——`loop/agent.py` 在 done 分支未捕获 `response.text`，补红测后修复；② 无 `harness.toml` 时默认模型为 `"mock"`，真实模式会把 `mock` 当模型名调用 API——`cli.py` 回退为 `deepseek-chat`。
 - 验证：52/52 测试绿；`cah run "用一句话解释Python装饰器"` 返回完整答案（控制台乱码为 PowerShell 编码显示问题，数据本身 UTF-8 正常）。
 - 教训：真实链路演示是发现"mock 全绿但真实不可用"类缺陷的最快方式。
+
+### T026 · 真实 LLM 工具调用协议（JSON 动作解析）
+- 技能：test-driven-development（内联执行）。
+- 内容：为真实模式补齐 harness 的核心一环——模型输出解析成动作并经过护栏执行：新增 `actions/parser.py`（JSON 动作提取/解析、显式 done、格式错误与未知工具反馈）；`loop/agent.py` 对无结构化动作的响应调用解析器并回灌格式错误（有界重试）；`DeepSeekLLM` 改为返回原始文本（`done=False`）由循环解析；系统提示加入 JSON 动作协议说明。
+- 测试：新增 `tests/test_parser.py`（5 例）+ 主循环真实风格脚本化用例（文本内 JSON 动作 → 文件真实写入 → 收敛 done）；全量 58/58 绿。
+- 意义：真实模型从"只问答"升级为"可调用工具干活"，与 mock 共享同一护栏/反馈/停机机制。

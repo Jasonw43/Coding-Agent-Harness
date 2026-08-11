@@ -68,7 +68,7 @@ cah key clear    # 清除
 
 存储优先级：**OS 凭据管理器（keyring）> 环境变量（`CAH_API_KEY`）> `.env` 文件**。
 
-风险说明：`.env` 为明文文件且进程环境可见，仅作为无凭据管理器环境的兜底；`.env` 已在 `.gitignore` 中排除。真实 LLM 需要有效 key；不配置 key 时请使用 `--mock`。
+风险说明：`.env` 为明文文件且进程环境可见，仅作为无凭据管理器环境的兜底；`.env` 已在 `.gitignore` 中排除。真实 LLM 需要有效 key；不配置 key 时请使用 `--mock`。真实模式下模型按 JSON 动作协议输出（如 `{"action": {"type": "write_file", "params": {...}}}`），harness 解析后经护栏执行，复杂多步任务的效果取决于模型遵循协议的程度。
 
 ## 分发（PyPI 包）
 
@@ -110,7 +110,7 @@ demo/mechanism_demo.py  # 三个必需行为的机制演示
 ## 已知限制
 
 - Python 3.11–3.14；CI 固定 3.12 作为稳定基线。
-- 真实 LLM 目前仅 DeepSeek（OpenAI 兼容）；`DeepSeekLLM` 返回最终文本（工具调用解析为后续工作）。
+- 真实 LLM 支持 DeepSeek（OpenAI 兼容）；工具调用通过 JSON 动作协议 + 解析器实现（`cah/actions/parser.py`），已被确定性测试覆盖。
 - 线上 demo 实例为 mock + 只读模式，用于演示审批流，不执行真实代码变更。
 - Render 免费档闲置 15 分钟休眠，首次访问需约 30–60 秒冷启动。
 - Windows 下 `shell` 工具使用系统默认解释器（cmd），命令 token 化按跨平台语义实现。

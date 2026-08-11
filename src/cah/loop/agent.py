@@ -7,6 +7,7 @@ from typing import Callable
 from uuid import uuid4
 
 from cah.actions.registry import ToolRegistry
+from cah.actions.parser import parse_action
 from cah.feedback.validators import Validator
 from cah.guardrails.pipeline import GuardrailPipeline
 from cah.hitl.state_machine import HITLStateMachine
@@ -45,6 +46,7 @@ class AgentLoop:
         self.max_retries = max_retries
         self.approval_resolver = approval_resolver or (lambda i, t: "rejected")
         self._run_id = run_id
+        self._final_text = ""
 
     # ---- context ----
 
@@ -54,7 +56,9 @@ class AgentLoop:
                 "role": "system",
                 "content": (
                     "You are a coding agent running inside a harness. "
-                    "Emit one action per turn; emit done=true when the task is complete. "
+                    "To use a tool, reply ONLY with a JSON object like "
+                    '{"action": {"type": "write_file", "params": {"path": "a.txt", "content": "x"}}}. '
+                    "When the task is complete, reply with plain text (your final answer). "
                     f"Available tools: {', '.join(self.tools.names())}. "
                     "You may receive feedback about failed validations; adjust accordingly."
                 ),
@@ -84,7 +88,6 @@ class AgentLoop:
         retries = 0
         prev_ok: bool | None = None
         status = "failed"
-        final_text = ""
 
         for step in range(1, self.max_steps + 1):
             context = self._build_context(task, event_texts)
@@ -96,21 +99,42 @@ class AgentLoop:
                 events.append({"step": step, "event": "STOP", "reason": "script exhausted"})
                 break
 
-            if response.done or response.action is None:
-                final_text = response.text
-                fb = self._validate()
-                if fb is None or fb.ok:
-                    status = "done"
-                    events.append({"step": step, "event": "DONE"})
-                elif retries >= self.max_retries:
-                    status = "failed"
-                    events.append({"step": step, "event": "FAILED", "summary": fb.summary})
-                else:
-                    retries += 1
-                    self._push_feedback(fb, event_texts, events, step)
+            if response.action is not None:
+                action = response.action
+            elif response.done:
+                # mock-style structured completion
+                status, retries = self._decide_done(
+                    response.text, retries, events, event_texts, step
+                )
+                if status == "continue":
+                    continue
                 break
-
-            action = response.action
+            else:
+                # real-LLM text: parse the tool protocol
+                parsed = parse_action(response.text, self.tools.names())
+                if parsed.error is not None:
+                    if retries >= self.max_retries:
+                        status = "failed"
+                        events.append(
+                            {"step": step, "event": "FAILED", "summary": parsed.error}
+                        )
+                        break
+                    retries += 1
+                    self._push_feedback(
+                        Feedback(ok=False, failures=[parsed.error], summary="action format error"),
+                        event_texts,
+                        events,
+                        step,
+                    )
+                    continue
+                if parsed.done:
+                    status, retries = self._decide_done(
+                        parsed.answer or response.text, retries, events, event_texts, step
+                    )
+                    if status == "continue":
+                        continue
+                    break
+                action = parsed.action
             if not action.id:
                 action.id = f"{run_id}-s{step}"
             action.run_id = run_id
@@ -176,7 +200,7 @@ class AgentLoop:
             status=status,
             steps=len(events),
             actions_log=events,
-            final_output=final_text or (event_texts[-1] if event_texts else ""),
+            final_output=self._final_text or (event_texts[-1] if event_texts else ""),
         )
 
     # ---- helpers ----
@@ -191,6 +215,27 @@ class AgentLoop:
     ) -> None:
         event_texts.append(f"FEEDBACK: {fb.summary}\n" + failures_text(fb))
         events.append({"step": step, "event": "FEEDBACK", "summary": fb.summary})
+
+    def _decide_done(
+        self,
+        final_text: str,
+        retries: int,
+        events: list[dict],
+        event_texts: list[str],
+        step: int,
+    ) -> tuple[str, int]:
+        """Validate on completion; returns (status, updated retries)."""
+        fb = self._validate()
+        if fb is None or fb.ok:
+            events.append({"step": step, "event": "DONE"})
+            self._final_text = final_text
+            return "done", retries
+        if retries >= self.max_retries:
+            events.append({"step": step, "event": "FAILED", "summary": fb.summary})
+            return "failed", retries
+        retries += 1
+        self._push_feedback(fb, event_texts, events, step)
+        return "continue", retries
 
 
 def failures_text(fb: Feedback) -> str:

@@ -88,3 +88,22 @@ def test_feedback_changes_next_action(tmp_path):
     loop.validator = Flaky()
     r = loop.run("task")
     assert r.status == "done" and calls["n"] == 2
+
+
+def test_loop_parses_real_style_json_actions(tmp_path):
+    """Real-LLM mode: plain text containing a JSON action is parsed and executed."""
+    loop = _make_loop(
+        tmp_path,
+        [
+            {
+                "text": '{"action": {"type": "write_file", "params": {"path": "x.py", "content": "print(1)"}}}',
+                "action": None,
+                "done": False,
+            },
+            {"text": "wrote the file and finished", "action": None, "done": False},
+        ],
+    )
+    r = loop.run("task")
+    assert r.status == "done"
+    assert (tmp_path / "ws" / "x.py").read_text(encoding="utf-8") == "print(1)"
+    assert r.final_output == "wrote the file and finished"

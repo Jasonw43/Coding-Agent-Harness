@@ -34,8 +34,11 @@ def test_mock_run_smoke(tmp_path, capsys):
     assert code == 0 and "done" in out.lower()
 
 
-def test_run_invalid_workspace_clean_error(capsys):
-    code = main(["run", "--mock", "--workspace", "Q:\\no_such_drive\\ws", "task"])
+def test_run_invalid_workspace_clean_error(tmp_path, capsys):
+    blocker = tmp_path / "blocker"
+    blocker.write_text("x", encoding="utf-8")
+    ws = blocker / "ws"  # parent is a file -> mkdir fails on all platforms
+    code = main(["run", "--mock", "--workspace", str(ws), "task"])
     err = capsys.readouterr().err
     assert code == 2 and "workspace" in err.lower()
 

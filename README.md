@@ -56,6 +56,8 @@ HARNESS_DEMO=1 uvicorn cah.web.app:app --host 0.0.0.0 --port 8000
 
 浏览器打开 `http://localhost:8000`，点击"启动演示运行"，即可看到 agent 尝试危险动作、等待人工审批的完整流程。
 
+线上 demo 实例：项目提供 `Dockerfile`（Hugging Face Spaces / Render 均可用），容器内以 demo 模式启动，端口 7860。
+
 ## Key 安全配置
 
 `cah` 的 API key **绝不硬编码、绝不提交 git、绝不写日志**。

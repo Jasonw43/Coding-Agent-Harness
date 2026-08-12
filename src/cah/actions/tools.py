@@ -18,6 +18,9 @@ def install_tools(registry: ToolRegistry) -> None:
     def write_file(params: dict) -> ToolResult:
         return sb.write_file(str(params.get("path", "")), str(params.get("content", "")))
 
+    def append_file(params: dict) -> ToolResult:
+        return sb.append_file(str(params.get("path", "")), str(params.get("content", "")))
+
     def list_dir(params: dict) -> ToolResult:
         return sb.list_dir(str(params.get("path", ".")))
 
@@ -71,6 +74,7 @@ def install_tools(registry: ToolRegistry) -> None:
 
     registry.register("read_file", read_file)
     registry.register("write_file", write_file)
+    registry.register("append_file", append_file)
     registry.register("list_dir", list_dir)
     registry.register("shell", shell)
     registry.register("run_tests", run_tests)

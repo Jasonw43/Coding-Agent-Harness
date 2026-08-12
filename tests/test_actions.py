@@ -83,3 +83,13 @@ def test_shell_env_sanitizes_secrets(tmp_path, monkeypatch):
         timeout_s=30,
     )
     assert r.ok and "MISSING" in r.output
+
+
+def test_append_file_appends_and_confines(tmp_path):
+    sb = WorkspaceSandbox(root=tmp_path, read_only=False)
+    assert sb.write_file("doc.md", "part1\n").ok
+    assert sb.append_file("doc.md", "part2\n").ok
+    assert sb.read_file("doc.md").output == "part1\npart2\n"
+    assert not sb.append_file("../evil.md", "x").ok
+    ro = WorkspaceSandbox(root=tmp_path, read_only=True)
+    assert not ro.append_file("doc.md", "x").ok

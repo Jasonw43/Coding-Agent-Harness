@@ -69,6 +69,22 @@ class WorkspaceSandbox:
             return self._err(f"write failed: {exc}")
         return self._ok("", {"path": str(target), "bytes": len(content.encode("utf-8"))})
 
+    def append_file(self, rel_path: str, content: str) -> ToolResult:
+        """Append content to a file (used for chunked long-form generation)."""
+        if self.read_only:
+            return self._err("read-only mode forbids writes")
+        try:
+            target = self.resolve(rel_path)
+        except PathEscapeError as exc:
+            return self._err(str(exc))
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with target.open("a", encoding="utf-8") as f:
+                f.write(content)
+        except OSError as exc:
+            return self._err(f"append failed: {exc}")
+        return self._ok("", {"path": str(target), "appended": len(content.encode("utf-8"))})
+
     def list_dir(self, rel_path: str = ".") -> ToolResult:
         try:
             target = self.resolve(rel_path)

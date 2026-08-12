@@ -1,6 +1,6 @@
 # Coding Agent Harness (`cah`) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 用 Python 实现一个治理优先的 coding agent harness——本地 CLI 运行、浏览器审批台完成 HITL、线上 mock 演示实例，且全部核心机制在移除真实 LLM 后仍可确定性单测。
 
@@ -49,7 +49,7 @@ demo/mechanism_demo.py          # 三行为机制演示
 - Create: `src/cah/__init__.py`、`src/cah/llm/__init__.py`、`src/cah/loop/__init__.py`、`src/cah/actions/__init__.py`、`src/cah/guardrails/__init__.py`、`src/cah/hitl/__init__.py`、`src/cah/feedback/__init__.py`、`src/cah/memory/__init__.py`、`src/cah/credentials/__init__.py`、`src/cah/web/__init__.py`（空文件，包标记）
 - Create: `tests/conftest.py`、`tests/test_import.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_import.py`
+- [x] **Step 1: 写失败测试** `tests/test_import.py`
 
 ```python
 def test_cah_importable():
@@ -57,14 +57,14 @@ def test_cah_importable():
     assert cah.__name__ == "cah"
 ```
 
-- [ ] **Step 2: 验证失败**
+- [x] **Step 2: 验证失败**
 Run: `python -m pytest tests/test_import.py -v` → 预期 `ModuleNotFoundError: cah`
 
-- [ ] **Step 3: 最小实现** — 创建 `pyproject.toml`（requires-python `>=3.11,<3.15`，hatchling 打包，`[project.scripts] cah = "cah.cli:main"`，依赖 httpx/fastapi/uvicorn/keyring，dev 依赖 pytest/httpx）与全部空包文件；`src/cah/__init__.py` 写 `__version__ = "0.1.0"`。
+- [x] **Step 3: 最小实现** — 创建 `pyproject.toml`（requires-python `>=3.11,<3.15`，hatchling 打包，`[project.scripts] cah = "cah.cli:main"`，依赖 httpx/fastapi/uvicorn/keyring，dev 依赖 pytest/httpx）与全部空包文件；`src/cah/__init__.py` 写 `__version__ = "0.1.0"`。
 
-- [ ] **Step 4: 验证通过** — `python -m pytest tests/test_import.py -v` → PASS
+- [x] **Step 4: 验证通过** — `python -m pytest tests/test_import.py -v` → PASS
 
-- [ ] **Step 5: 提交** — `git add pyproject.toml src tests && git commit -m "chore: scaffold cah package"`
+- [x] **Step 5: 提交** — `git add pyproject.toml src tests && git commit -m "chore: scaffold cah package"`
 
 ### Task 2: 核心类型 `models.py`
 
@@ -72,7 +72,7 @@ Run: `python -m pytest tests/test_import.py -v` → 预期 `ModuleNotFoundError:
 - Create: `src/cah/models.py`
 - Test: `tests/test_models.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_models.py`
+- [x] **Step 1: 写失败测试** `tests/test_models.py`
 
 ```python
 from cah.models import Action, ToolResult, GuardrailDecision, Feedback, LLMResponse, RunResult
@@ -95,13 +95,13 @@ def test_feedback_and_llm_response():
     assert not fb.ok and resp.done
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_models.py -v` → `ModuleNotFoundError`
+- [x] **Step 2: 验证失败** — `pytest tests/test_models.py -v` → `ModuleNotFoundError`
 
-- [ ] **Step 3: 最小实现** — 定义 dataclass：`Action(id, type, params, run_id)`；`ToolResult(ok, output, meta)`；`GuardrailDecision(verdict, reason="", risk_level="low", action_id="")`；`Feedback(ok, failures, summary)`；`LLMResponse(text, action, done)`；`RunResult(run_id, status, steps, actions_log, final_output)`。
+- [x] **Step 3: 最小实现** — 定义 dataclass：`Action(id, type, params, run_id)`；`ToolResult(ok, output, meta)`；`GuardrailDecision(verdict, reason="", risk_level="low", action_id="")`；`Feedback(ok, failures, summary)`；`LLMResponse(text, action, done)`；`RunResult(run_id, status, steps, actions_log, final_output)`。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_models.py -v` → 4 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_models.py -v` → 4 PASS
 
-- [ ] **Step 5: 提交** — `git add src/cah/models.py tests/test_models.py && git commit -m "feat: core data models"`
+- [x] **Step 5: 提交** — `git add src/cah/models.py tests/test_models.py && git commit -m "feat: core data models"`
 
 ### Task 3: 配置 `config.py`
 
@@ -109,7 +109,7 @@ def test_feedback_and_llm_response():
 - Create: `src/cah/config.py`
 - Test: `tests/test_config.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_config.py`
+- [x] **Step 1: 写失败测试** `tests/test_config.py`
 
 ```python
 import tomllib
@@ -132,13 +132,13 @@ def test_invalid_config_fails_fast(tmp_path):
         pass
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_config.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_config.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `HarnessConfig` dataclass：`model="mock", max_steps=10, approval_timeout_s=300, max_retries=3, deny_patterns=[], allow_prefixes=[], tools_enabled=[], validators=[], workspace=".", read_only=False, memory_enabled=True`；`load_config(path)` 用 `tomllib.load`，逐字段类型校验，非法即 `raise ValueError(定位信息)`；缺省字段用默认值。
+- [x] **Step 3: 最小实现** — `HarnessConfig` dataclass：`model="mock", max_steps=10, approval_timeout_s=300, max_retries=3, deny_patterns=[], allow_prefixes=[], tools_enabled=[], validators=[], workspace=".", read_only=False, memory_enabled=True`；`load_config(path)` 用 `tomllib.load`，逐字段类型校验，非法即 `raise ValueError(定位信息)`；缺省字段用默认值。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_config.py -v` → 2 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_config.py -v` → 2 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: declarative TOML config"`
+- [x] **Step 5: 提交** — `git commit -am "feat: declarative TOML config"`
 
 ### Task 4: LLM 抽象与 MockLLM
 
@@ -146,7 +146,7 @@ def test_invalid_config_fails_fast(tmp_path):
 - Create: `src/cah/llm/base.py`、`src/cah/llm/mock.py`
 - Test: `tests/test_llm_mock.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_llm_mock.py`
+- [x] **Step 1: 写失败测试** `tests/test_llm_mock.py`
 
 ```python
 import json
@@ -177,13 +177,13 @@ def test_mock_llm_exhausts(tmp_path):
         pass
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_llm_mock.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_llm_mock.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `base.py`：`LLMClient` Protocol：`complete(context: list[dict], available_actions: list[dict]) -> LLMResponse`。`mock.py`：`MockLLM(script_path, loop=False)`，内部游标逐行读 JSONL，构造 `LLMResponse`；超出步数 `raise StopIteration`。
+- [x] **Step 3: 最小实现** — `base.py`：`LLMClient` Protocol：`complete(context: list[dict], available_actions: list[dict]) -> LLMResponse`。`mock.py`：`MockLLM(script_path, loop=False)`，内部游标逐行读 JSONL，构造 `LLMResponse`；超出步数 `raise StopIteration`。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_llm_mock.py -v` → 2 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_llm_mock.py -v` → 2 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: LLM abstraction with scripted mock"`
+- [x] **Step 5: 提交** — `git commit -am "feat: LLM abstraction with scripted mock"`
 
 ### Task 5: 命令护栏 `guardrails/command.py`
 
@@ -191,7 +191,7 @@ def test_mock_llm_exhausts(tmp_path):
 - Create: `src/cah/guardrails/command.py`
 - Test: `tests/test_guardrails.py`
 
-- [ ] **Step 1: 写失败测试**（加入 `tests/test_guardrails.py`）
+- [x] **Step 1: 写失败测试**（加入 `tests/test_guardrails.py`）
 
 ```python
 from pathlib import Path
@@ -214,13 +214,13 @@ def test_non_shell_action_safe():
     assert d.verdict == "SAFE"
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_guardrails.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_guardrails.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `CommandGuardrail(deny_patterns, allow_prefixes)`；`check(action, workspace)`：非 `shell` 动作直接 SAFE；命令 `shlex.split` 后 join；命中任一 deny 子串 → `BLOCKED`；否则命中任一 allow 前缀 → `SAFE`；其余默认 `REQUIRE_APPROVAL`（保守）。返回 `GuardrailDecision`（含 reason）。
+- [x] **Step 3: 最小实现** — `CommandGuardrail(deny_patterns, allow_prefixes)`；`check(action, workspace)`：非 `shell` 动作直接 SAFE；命令 `shlex.split` 后 join；命中任一 deny 子串 → `BLOCKED`；否则命中任一 allow 前缀 → `SAFE`；其余默认 `REQUIRE_APPROVAL`（保守）。返回 `GuardrailDecision`（含 reason）。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_guardrails.py -v` → 3 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_guardrails.py -v` → 3 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: command guardrail"`
+- [x] **Step 5: 提交** — `git commit -am "feat: command guardrail"`
 
 ### Task 6: 路径护栏 `guardrails/path.py`
 
@@ -228,7 +228,7 @@ def test_non_shell_action_safe():
 - Create: `src/cah/guardrails/path.py`
 - Test: `tests/test_guardrails.py`（追加）
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```python
 from cah.guardrails.path import PathGuardrail
@@ -246,13 +246,13 @@ def test_path_inside_ok(tmp_path):
     assert d.verdict == "SAFE"
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_guardrails.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_guardrails.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `PathGuardrail.check(action, workspace)`：对 `read_file/write_file` 类动作，`(workspace / path).resolve()` 与 `workspace.resolve()` 比较，前缀不匹配 → `BLOCKED`；非文件类动作 SAFE。
+- [x] **Step 3: 最小实现** — `PathGuardrail.check(action, workspace)`：对 `read_file/write_file` 类动作，`(workspace / path).resolve()` 与 `workspace.resolve()` 比较，前缀不匹配 → `BLOCKED`；非文件类动作 SAFE。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_guardrails.py -v` → 5 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_guardrails.py -v` → 5 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: path confinement guardrail"`
+- [x] **Step 5: 提交** — `git commit -am "feat: path confinement guardrail"`
 
 ### Task 7: 工具护栏与管线 `guardrails/tool.py` + `pipeline.py`
 
@@ -260,7 +260,7 @@ def test_path_inside_ok(tmp_path):
 - Create: `src/cah/guardrails/tool.py`、`src/cah/guardrails/pipeline.py`
 - Test: `tests/test_guardrails.py`（追加）
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```python
 from cah.guardrails.tool import ToolGuardrail
@@ -283,13 +283,13 @@ def test_pipeline_first_non_safe_wins():
     assert d.verdict == "BLOCKED"
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_guardrails.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_guardrails.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `ToolGuardrail(tools_enabled, read_only)`：动作类型不在启用列表 → BLOCKED；`read_only` 且类型 ∈ {write_file, shell} → BLOCKED。`GuardrailPipeline(guards)`：按序 `check`，返回第一个非 SAFE；全 SAFE 返回 SAFE；任一检查器抛异常 → 返回 `BLOCKED(fail-closed)`。
+- [x] **Step 3: 最小实现** — `ToolGuardrail(tools_enabled, read_only)`：动作类型不在启用列表 → BLOCKED；`read_only` 且类型 ∈ {write_file, shell} → BLOCKED。`GuardrailPipeline(guards)`：按序 `check`，返回第一个非 SAFE；全 SAFE 返回 SAFE；任一检查器抛异常 → 返回 `BLOCKED(fail-closed)`。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_guardrails.py -v` → 7 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_guardrails.py -v` → 7 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: tool guardrail and pipeline (fail-closed)"`
+- [x] **Step 5: 提交** — `git commit -am "feat: tool guardrail and pipeline (fail-closed)"`
 
 ### Task 8: HITL 状态机 `hitl/state_machine.py`
 
@@ -297,7 +297,7 @@ def test_pipeline_first_non_safe_wins():
 - Create: `src/cah/hitl/state_machine.py`
 - Test: `tests/test_hitl.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_hitl.py`
+- [x] **Step 1: 写失败测试** `tests/test_hitl.py`
 
 ```python
 from cah.hitl.state_machine import HITLStateMachine
@@ -326,13 +326,13 @@ def test_wrong_token_rejected(tmp_path):
         pass
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_hitl.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_hitl.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `ApprovalRecord` dataclass + `ApprovalState` Enum（PENDING/APPROVED/REJECTED/EXPIRED/CANCELED）；`HITLStateMachine(store_path, timeout_s)`：`submit()` 生成 `secrets.token_urlsafe(16)` token（只返回一次），存 `sha256(token)`；`approve/reject` 校验 token 哈希，状态非 PENDING 时幂等返回；`resolve_expired()` 将超时项置 EXPIRED；JSON 文件持久化（原子写：先写临时文件再 rename）。
+- [x] **Step 3: 最小实现** — `ApprovalRecord` dataclass + `ApprovalState` Enum（PENDING/APPROVED/REJECTED/EXPIRED/CANCELED）；`HITLStateMachine(store_path, timeout_s)`：`submit()` 生成 `secrets.token_urlsafe(16)` token（只返回一次），存 `sha256(token)`；`approve/reject` 校验 token 哈希，状态非 PENDING 时幂等返回；`resolve_expired()` 将超时项置 EXPIRED；JSON 文件持久化（原子写：先写临时文件再 rename）。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_hitl.py -v` → 3 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_hitl.py -v` → 3 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: HITL approval state machine"`
+- [x] **Step 5: 提交** — `git commit -am "feat: HITL approval state machine"`
 
 ### Task 9: 工具沙箱与内置工具 `actions/`
 
@@ -340,7 +340,7 @@ def test_wrong_token_rejected(tmp_path):
 - Create: `src/cah/actions/sandbox.py`、`src/cah/actions/registry.py`、`src/cah/actions/tools.py`
 - Test: `tests/test_actions.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_actions.py`
+- [x] **Step 1: 写失败测试** `tests/test_actions.py`
 
 ```python
 from cah.actions.sandbox import WorkspaceSandbox
@@ -368,13 +368,13 @@ def test_registry_dispatch(tmp_path):
     assert r.ok
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_actions.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_actions.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `WorkspaceSandbox(root, read_only)`：`resolve(path)` realpath 前缀校验（越界抛/返回错误）；`read_file/write_file/list_dir/run_shell`（subprocess，`cwd=root`，`env` 过滤敏感变量，超时与输出上限 64KB，失败结构化）。`ToolRegistry(sandbox, memory)`：`register(name, fn)` + `dispatch(type, params) -> ToolResult`，未知工具返回 `ok=False`。`tools.py` 挂载 read_file/write_file/list_dir/search(rg)/shell/run_tests/memory_store/memory_recall。
+- [x] **Step 3: 最小实现** — `WorkspaceSandbox(root, read_only)`：`resolve(path)` realpath 前缀校验（越界抛/返回错误）；`read_file/write_file/list_dir/run_shell`（subprocess，`cwd=root`，`env` 过滤敏感变量，超时与输出上限 64KB，失败结构化）。`ToolRegistry(sandbox, memory)`：`register(name, fn)` + `dispatch(type, params) -> ToolResult`，未知工具返回 `ok=False`。`tools.py` 挂载 read_file/write_file/list_dir/search(rg)/shell/run_tests/memory_store/memory_recall。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_actions.py -v` → 4 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_actions.py -v` → 4 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: workspace sandbox and tool registry"`
+- [x] **Step 5: 提交** — `git commit -am "feat: workspace sandbox and tool registry"`
 
 ### Task 10: 记忆 `memory/store.py`
 
@@ -382,7 +382,7 @@ def test_registry_dispatch(tmp_path):
 - Create: `src/cah/memory/store.py`
 - Test: `tests/test_memory.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_memory.py`
+- [x] **Step 1: 写失败测试** `tests/test_memory.py`
 
 ```python
 from cah.memory.store import MemoryStore
@@ -398,13 +398,13 @@ def test_recall_empty(tmp_path):
     assert ms.recall("nothing") == []
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_memory.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_memory.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `MemoryEntry(key, content, tags, created_at)`；`MemoryStore(path)`：JSON 列表持久化，`store()` 追加（去重同 key 覆盖），`recall(query, limit=5)` 按关键词/标签子串匹配返回片段；损坏文件 → 备份 `.bak` 后重建并记警告。
+- [x] **Step 3: 最小实现** — `MemoryEntry(key, content, tags, created_at)`；`MemoryStore(path)`：JSON 列表持久化，`store()` 追加（去重同 key 覆盖），`recall(query, limit=5)` 按关键词/标签子串匹配返回片段；损坏文件 → 备份 `.bak` 后重建并记警告。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_memory.py -v` → 2 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_memory.py -v` → 2 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: persistent memory store"`
+- [x] **Step 5: 提交** — `git commit -am "feat: persistent memory store"`
 
 ### Task 11: 反馈校验器 `feedback/validators.py`
 
@@ -412,7 +412,7 @@ def test_recall_empty(tmp_path):
 - Create: `src/cah/feedback/validators.py`
 - Test: `tests/test_feedback.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_feedback.py`
+- [x] **Step 1: 写失败测试** `tests/test_feedback.py`
 
 ```python
 from cah.feedback.validators import TestRunnerValidator
@@ -428,13 +428,13 @@ def test_validator_reports_success(tmp_path):
     assert fb.ok
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_feedback.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_feedback.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `Validator` Protocol：`validate(workspace) -> Feedback`；`TestRunnerValidator(command, timeout_s=120)`：subprocess 运行，`returncode==0` → ok；否则解析 stderr/stdout 中含 `FAILED`/`Error` 的行作为 failures，summary 为退出码 + 行数；超时 → `ok=False`。
+- [x] **Step 3: 最小实现** — `Validator` Protocol：`validate(workspace) -> Feedback`；`TestRunnerValidator(command, timeout_s=120)`：subprocess 运行，`returncode==0` → ok；否则解析 stderr/stdout 中含 `FAILED`/`Error` 的行作为 failures，summary 为退出码 + 行数；超时 → `ok=False`。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_feedback.py -v` → 2 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_feedback.py -v` → 2 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: deterministic feedback validators"`
+- [x] **Step 5: 提交** — `git commit -am "feat: deterministic feedback validators"`
 
 ### Task 12: 凭据管理 `credentials/manager.py`
 
@@ -442,7 +442,7 @@ def test_validator_reports_success(tmp_path):
 - Create: `src/cah/credentials/manager.py`
 - Test: `tests/test_credentials.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_credentials.py`
+- [x] **Step 1: 写失败测试** `tests/test_credentials.py`
 
 ```python
 import pytest
@@ -469,13 +469,13 @@ class _FakeKeyring:
     def delete_password(self, s, u): self.store.pop((s, u), None)
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_credentials.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_credentials.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `CredentialsManager(service="cah", env_prefix="CAH", env_file=Path(".env"))`：`set_key()` 写 keyring（失败回退 .env，记警告）；`get_key()` 顺序 keyring → 环境变量 → .env；`status()` 返回 `{"configured": bool, "source": str, "masked": "sk-****"}`；`clear()` 清除全部来源。读 .env 用简单解析（`KEY=VALUE` 行），**不回显明文**。
+- [x] **Step 3: 最小实现** — `CredentialsManager(service="cah", env_prefix="CAH", env_file=Path(".env"))`：`set_key()` 写 keyring（失败回退 .env，记警告）；`get_key()` 顺序 keyring → 环境变量 → .env；`status()` 返回 `{"configured": bool, "source": str, "masked": "sk-****"}`；`clear()` 清除全部来源。读 .env 用简单解析（`KEY=VALUE` 行），**不回显明文**。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_credentials.py -v` → 1 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_credentials.py -v` → 1 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: credentials manager (keyring first)"`
+- [x] **Step 5: 提交** — `git commit -am "feat: credentials manager (keyring first)"`
 
 ### Task 13: 主循环 `loop/agent.py`
 
@@ -483,7 +483,7 @@ class _FakeKeyring:
 - Create: `src/cah/loop/agent.py`
 - Test: `tests/test_loop.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_loop.py`
+- [x] **Step 1: 写失败测试** `tests/test_loop.py`
 
 ```python
 import json
@@ -551,9 +551,9 @@ def test_feedback_changes_next_action(tmp_path):
     assert r.status == "done"
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_loop.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_loop.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `AgentLoop(...)`：
+- [x] **Step 3: 最小实现** — `AgentLoop(...)`：
   - 构造函数中 `hitl` 与 `validator` 允许为 `None`（分别对应"无人工审批"与"不跑校验器"的配置）；
   - 上下文组装：system（配置摘要）→ user（任务）→ memory 召回 → 历史事件（含反馈）→ 当前步；
   - 每步调 `llm.complete`，解析 `action`：
@@ -561,9 +561,9 @@ def test_feedback_changes_next_action(tmp_path):
     - 有 action → `pipeline.check`：SAFE → 工具分发，结果入日志与上下文；REQUIRE_APPROVAL → `hitl.submit` 后用 `approval_resolver(action_id, token)` 取决策（approve → 执行；reject → 回灌"REJECTED: reason"）；BLOCKED → 回灌 "BLOCKED: reason"；
   - 步数超 `max_steps` → `failed`；事件全部入 `RunResult.actions_log`；任何未捕获异常 → `failed`（结构化）。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_loop.py -v` → 4 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_loop.py -v` → 4 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: agent main loop with guardrails and feedback"`
+- [x] **Step 5: 提交** — `git commit -am "feat: agent main loop with guardrails and feedback"`
 
 ### Task 14: CLI `cli.py`
 
@@ -571,7 +571,7 @@ def test_feedback_changes_next_action(tmp_path):
 - Create: `src/cah/cli.py`
 - Test: `tests/test_cli.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_cli.py`
+- [x] **Step 1: 写失败测试** `tests/test_cli.py`
 
 ```python
 from cah.cli import build_parser
@@ -583,13 +583,13 @@ def test_parser_commands():
         assert args.command == cmd
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_cli.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_cli.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `build_parser()`：argparse 子命令 `run <task>`（`--mock`、`--read-only`、`--workspace`）、`approve <action_id>`、`reject <action_id>`、`status`、`key set|status|clear`（set 用 `getpass` 隐藏输入）、`config init|show`（init 生成默认 TOML）、`demo`。`main(argv=None)` 分发；退出码 0/非 0。
+- [x] **Step 3: 最小实现** — `build_parser()`：argparse 子命令 `run <task>`（`--mock`、`--read-only`、`--workspace`）、`approve <action_id>`、`reject <action_id>`、`status`、`key set|status|clear`（set 用 `getpass` 隐藏输入）、`config init|show`（init 生成默认 TOML）、`demo`。`main(argv=None)` 分发；退出码 0/非 0。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_cli.py -v` → 1 PASS；再手动 `python -m cah.cli --help` 冒烟
+- [x] **Step 4: 验证通过** — `pytest tests/test_cli.py -v` → 1 PASS；再手动 `python -m cah.cli --help` 冒烟
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: CLI entrypoint"`
+- [x] **Step 5: 提交** — `git commit -am "feat: CLI entrypoint"`
 
 ### Task 15: Web 审批台 `web/app.py`
 
@@ -597,7 +597,7 @@ def test_parser_commands():
 - Create: `src/cah/web/app.py`、`src/cah/web/static/index.html`（内联 CSS/JS 单页）
 - Test: `tests/test_web.py`
 
-- [ ] **Step 1: 写失败测试** `tests/test_web.py`
+- [x] **Step 1: 写失败测试** `tests/test_web.py`
 
 ```python
 from fastapi.testclient import TestClient
@@ -626,13 +626,13 @@ def test_demo_run_and_approval_flow(tmp_path):
     assert c.post(f"/api/actions/{aid}/approve", json={"token": actions[0]["token"]}).status_code == 200
 ```
 
-- [ ] **Step 2: 验证失败** — `pytest tests/test_web.py -v` → 导入失败
+- [x] **Step 2: 验证失败** — `pytest tests/test_web.py -v` → 导入失败
 
-- [ ] **Step 3: 最小实现** — `create_app(store_dir, demo=True)`：`GET /` 返回单页 UI；`GET /api/actions` 读 HITL 存储；`POST /api/actions/{id}/approve|reject` 调状态机；`GET /api/runs/{id}/events` SSE 心跳；`POST /api/demo` 后台线程跑一条 mock 脚本（含一个危险动作 → PENDING → 用户审批 → 完成），事件写入内存队列。demo 模式强制 MockLLM + 只读沙箱。
+- [x] **Step 3: 最小实现** — `create_app(store_dir, demo=True)`：`GET /` 返回单页 UI；`GET /api/actions` 读 HITL 存储；`POST /api/actions/{id}/approve|reject` 调状态机；`GET /api/runs/{id}/events` SSE 心跳；`POST /api/demo` 后台线程跑一条 mock 脚本（含一个危险动作 → PENDING → 用户审批 → 完成），事件写入内存队列。demo 模式强制 MockLLM + 只读沙箱。
 
-- [ ] **Step 4: 验证通过** — `pytest tests/test_web.py -v` → 2 PASS
+- [x] **Step 4: 验证通过** — `pytest tests/test_web.py -v` → 2 PASS
 
-- [ ] **Step 5: 提交** — `git commit -am "feat: web approval console (demo mode)"`
+- [x] **Step 5: 提交** — `git commit -am "feat: web approval console (demo mode)"`
 
 ### Task 16: 机制演示 `demo/mechanism_demo.py`
 
@@ -640,7 +640,7 @@ def test_demo_run_and_approval_flow(tmp_path):
 - Create: `demo/mechanism_demo.py`
 - Test: 通过脚本自身断言（`pytest` 之外的一键复现）
 
-- [ ] **Step 1: 写演示脚本（含内置断言，相当于先写"测试"）**
+- [x] **Step 1: 写演示脚本（含内置断言，相当于先写"测试"）**
 
 ```python
 """机制演示：确定性复现课程要求的三个行为。python demo/mechanism_demo.py"""
@@ -706,58 +706,89 @@ if __name__ == "__main__":
     demo_1_guardrail_blocks(); demo_2_feedback_changes_next_action(); demo_3_hitl_transitions()
 ```
 
-- [ ] **Step 2: 运行验证** — `python demo/mechanism_demo.py` → 三行输出、无异常、退出码 0
+- [x] **Step 2: 运行验证** — `python demo/mechanism_demo.py` → 三行输出、无异常、退出码 0
 
-- [ ] **Step 3: 提交** — `git add demo/mechanism_demo.py && git commit -m "demo: mechanism demo (3 required behaviors)"`
+- [x] **Step 3: 提交** — `git add demo/mechanism_demo.py && git commit -m "demo: mechanism demo (3 required behaviors)"`
 
 ### Task 17: README.md
 
 **Files:**
 - Create: `README.md`
 
-- [ ] **Step 1: 编写** — 必须含课程要求的章节：项目简介；安装（`pip install` 与 `pip install git+...`）；运行（`cah run --mock`、审批、`cah demo`）；key 安全配置（`cah key set`，Windows 凭据管理器，`.env` 明文风险说明）；分发（PyPI wheel 构建命令）；目录结构；安全边界（沙箱、只读模式、fail-closed）；已知限制（Python 3.11–3.13、Render 免费档休眠、demo 模式限制）；第三方依赖许可证声明。
+- [x] **Step 1: 编写** — 必须含课程要求的章节：项目简介；安装（`pip install` 与 `pip install git+...`）；运行（`cah run --mock`、审批、`cah demo`）；key 安全配置（`cah key set`，Windows 凭据管理器，`.env` 明文风险说明）；分发（PyPI wheel 构建命令）；目录结构；安全边界（沙箱、只读模式、fail-closed）；已知限制（Python 3.11–3.13、Render 免费档休眠、demo 模式限制）；第三方依赖许可证声明。
 
-- [ ] **Step 2: 自查** — 对照 SPEC §9 验收标准逐条可追溯到 README/命令
+- [x] **Step 2: 自查** — 对照 SPEC §9 验收标准逐条可追溯到 README/命令
 
-- [ ] **Step 3: 提交** — `git commit -am "docs: README with required sections"`
+- [x] **Step 3: 提交** — `git commit -am "docs: README with required sections"`
 
 ### Task 18: CI 双轨
 
 **Files:**
 - Create: `.github/workflows/ci.yml`、`.gitlab-ci.yml`
 
-- [ ] **Step 1: 编写 GitHub Actions** — `on: [push, pull_request]`；job `test`：ubuntu-latest、setup-python 3.12、`pip install -e ".[dev]"`、`pytest`、`python -m build`；job `publish` 仅在 tag 触发时 `twine upload`（用 `PYPI_TOKEN` secret）。
+- [x] **Step 1: 编写 GitHub Actions** — `on: [push, pull_request]`；job `test`：ubuntu-latest、setup-python 3.12、`pip install -e ".[dev]"`、`pytest`、`python -m build`；job `publish` 仅在 tag 触发时 `twine upload`（用 `PYPI_TOKEN` secret）。
 
-- [ ] **Step 2: 编写 GitLab CI** — `.gitlab-ci.yml`：`image: python:3.12`；job 名**必须**为 `unit-test`：`pip install -e ".[dev]"` + `pytest` + `python -m build`。
+- [x] **Step 2: 编写 GitLab CI** — `.gitlab-ci.yml`：`image: python:3.12`；job 名**必须**为 `unit-test`：`pip install -e ".[dev]"` + `pytest` + `python -m build`。
 
-- [ ] **Step 3: 本地验证等价命令** — `pip install -e ".[dev]" && pytest` → 全绿
+- [x] **Step 3: 本地验证等价命令** — `pip install -e ".[dev]" && pytest` → 全绿
 
-- [ ] **Step 4: 提交** — `git commit -am "ci: GitHub Actions + GitLab unit-test job"`
+- [x] **Step 4: 提交** — `git commit -am "ci: GitHub Actions + GitLab unit-test job"`
 
 ### Task 19: 打包验证
 
 **Files:**
 - Modify: `pyproject.toml`（如构建报错）
 
-- [ ] **Step 1: 构建** — `python -m build` → 产出 `dist/coding_agent_harness-0.1.0-*.whl`
+- [x] **Step 1: 构建** — `python -m build` → 产出 `dist/coding_agent_harness-0.1.0-*.whl`
 
-- [ ] **Step 2: 干净环境安装** — 新 venv 中 `pip install dist/*.whl` → `cah --help` 可运行
+- [x] **Step 2: 干净环境安装** — 新 venv 中 `pip install dist/*.whl` → `cah --help` 可运行
 
-- [ ] **Step 3: 提交** — 无代码改动则跳过提交；有改动则 `git commit -am "build: fix packaging"`
+- [x] **Step 3: 提交** — 无代码改动则跳过提交；有改动则 `git commit -am "build: fix packaging"`
 
 ### Task 20: 部署配置
 
 **Files:**
 - Create: `render.yaml`
 
-- [ ] **Step 1: 编写 render.yaml** — web service：build `pip install -e ".[dev]"`，start `uvicorn cah.web.app:app --host 0.0.0.0 --port $PORT`，env `HARNESS_DEMO=1`（强制 demo 模式）。
+- [x] **Step 1: 编写 render.yaml** — web service：build `pip install -e ".[dev]"`，start `uvicorn cah.web.app:app --host 0.0.0.0 --port $PORT`，env `HARNESS_DEMO=1`（强制 demo 模式）。
 
-- [ ] **Step 2: web/app.py 支持 `HARNESS_DEMO`** — `create_app()` 读取环境变量，demo 模式下拒绝非演示接口（或强制 mock + 只读）。
+- [x] **Step 2: web/app.py 支持 `HARNESS_DEMO`** — `create_app()` 读取环境变量，demo 模式下拒绝非演示接口（或强制 mock + 只读）。
 
-- [ ] **Step 3: 提交** — `git commit -am "deploy: render blueprint with demo mode"`
+- [x] **Step 3: 提交** — `git commit -am "deploy: render blueprint with demo mode"`
 
 ---
 
 ## 冷启动验证（§4.5）指定任务
 
 冷启动 agent（Claude Code 2.1.226，全新 session）已完成 **Task 5（命令护栏）与 Task 8（HITL 状态机）**（2026-08-10）：提交 `901c002`（scaffold）、`32ef984`（guardrail）、`8635c5f`（hitl），10 个测试全绿（主 agent 独立复验通过）。结果与修订记录见 `SPEC_PROCESS.md` §六。
+
+---
+
+## 实现完成记录（§4.7：每 task 标记完成并附 commit hash）
+
+> 全部 T01–T20 已完成并合入 `main`（2026-08-11 全量 83+ 测试绿；最终状态 87 测试绿）。对应提交如下（后续增强与评审修复另列）。
+
+| Task | 内容 | 提交 |
+| --- | --- | --- |
+| T01 | 项目骨架 | `42ff38d` |
+| T02 | 核心类型 models | `a23aa9a` |
+| T03 | 声明式配置 | `d8801ed` |
+| T04 | LLM 抽象 + MockLLM | `46e88e2` |
+| T05 | 命令护栏 | `4b99eea` |
+| T06 | 路径护栏 | `91bbe3e` |
+| T07 | 护栏管线（fail-closed） | `3a263d4` |
+| T08 | HITL 状态机 | `e295170` |
+| T09 | 工作区沙箱 + 工具注册表 | `e53b84d`（修复 `f406664`） |
+| T10 | 记忆存储 | `5331276` |
+| T11 | 反馈校验器 | `bd2ba95` |
+| T12 | 凭据管理 | `9c7cfcb` |
+| T13 | 主循环 | `0fdf238` |
+| T14 | CLI + DeepSeek 客户端 | `b2ccf78` |
+| T15 | Web 审批台 | `a726851` |
+| T16 | 机制演示 | `9587a8d` |
+| T17 | README | `6f1dd30` |
+| T18 | 双 CI（Actions + GitLab） | `6f1dd30` |
+| T19 | PyPI 打包验证 | `6f1dd30` |
+| T20 | 部署配置（render.yaml/Dockerfile/Streamlit） | `6f1dd30`、`7d795ad`、`244ae05` |
+
+后续增强与评审修复：`4001dba`（真实 LLM JSON 协议）、`ef32c24`（拒绝代码块）、`8cda836`（XML 工具调用）、`4b1f02a`（多动作执行）、`baf0247`（原生 tool_calls）、`ac68060`（5 条评审修复）、`db5172c`（12 条评审修复）、`4317636`（多动作审批 id）、`3e72487`（append_file）、`4b1ea71`（max_tokens）、`3ce65e2`（审批提示 `--token=`）。

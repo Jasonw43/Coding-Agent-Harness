@@ -203,9 +203,12 @@ class AgentLoop:
                 actions = parsed.actions
 
             executed_any = False
-            for action in actions:
+            for idx, action in enumerate(actions, start=1):
                 if not action.id:
-                    action.id = f"{run_id}-s{step}"
+                    if len(actions) > 1:
+                        action.id = f"{run_id}-s{step}-a{idx}"
+                    else:
+                        action.id = f"{run_id}-s{step}"
                 action.run_id = run_id
 
                 decision = self.pipeline.check(action, self.workspace)

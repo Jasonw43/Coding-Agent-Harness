@@ -309,3 +309,26 @@ def test_full_pipeline_integration(workspace, registry, tmp_path):
     assert "BLOCKED" in events
     assert "FEEDBACK" in events
     assert calls["n"] == 2
+
+
+def test_multi_action_reply_two_approvals_no_collision(tmp_path):
+    """Two approval-requiring actions in one reply must get distinct ids."""
+    loop = _make_loop(
+        tmp_path,
+        [
+            {
+                "text": (
+                    '{"action": {"type": "shell", "params": {"command": "deploy --prod"}}}\n'
+                    '{"action": {"type": "shell", "params": {"command": "deploy --staging"}}}'
+                ),
+                "action": None,
+                "done": False,
+            },
+            {"text": "done", "action": None, "done": False},
+        ],
+        approval="approved",
+    )
+    r = loop.run("task")
+    assert r.status == "done"
+    tools = [e.get("tool") for e in r.actions_log if e.get("event") == "TOOL"]
+    assert tools.count("shell") == 2

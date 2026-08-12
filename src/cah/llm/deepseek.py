@@ -29,10 +29,12 @@ class DeepSeekLLM:
         transport: httpx.BaseTransport | None = None,
         max_attempts: int = 3,
         retry_delay_s: float = 1.0,
+        max_tokens: int = 8192,
     ) -> None:
         self.model = model
         self.max_attempts = max_attempts
         self.retry_delay_s = retry_delay_s
+        self.max_tokens = max_tokens
         self._client = httpx.Client(
             base_url=base_url,
             headers={"Authorization": f"Bearer {api_key}"},
@@ -48,6 +50,7 @@ class DeepSeekLLM:
         payload = {
             "model": self.model,
             "messages": messages,
+            "max_tokens": self.max_tokens,
             "tools": [
                 {
                     "type": "function",

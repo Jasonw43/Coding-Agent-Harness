@@ -1,5 +1,7 @@
 """Deterministic test for DeepSeekLLM using a mocked HTTP transport."""
 
+import json
+
 import httpx
 
 from cah.llm.deepseek import DeepSeekLLM, LLMError
@@ -109,3 +111,21 @@ def test_deepseek_gives_up_after_max_attempts():
         assert False, "should raise LLMError"
     except LLMError:
         pass
+
+
+def test_deepseek_sends_max_tokens():
+    captured = {}
+
+    def handler(request):
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{"message": {"content": "ok"}}]})
+
+    llm = DeepSeekLLM(
+        api_key="sk-test",
+        base_url="https://api.deepseek.com",
+        model="deepseek-chat",
+        transport=httpx.MockTransport(handler),
+        max_tokens=8192,
+    )
+    llm.complete(context=[], available_actions=[])
+    assert captured["body"]["max_tokens"] == 8192

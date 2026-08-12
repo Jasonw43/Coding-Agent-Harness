@@ -86,3 +86,22 @@ def test_python_m_cah_runs():
     )
     assert proc.returncode == 0
     assert "usage: cah" in proc.stdout
+
+
+def test_approval_hint_uses_equals_form_for_dash_tokens(tmp_path, capsys):
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    (tmp_path / "harness.toml").write_text("approval_timeout_s = 1\n", encoding="utf-8")
+    script = tmp_path / "script.jsonl"
+    script.write_text(
+        '{"text":"run","action":{"type":"shell","params":{"command":"deploy --prod"}},"done":false}\n'
+        '{"text":"done","action":null,"done":true}\n',
+        encoding="utf-8",
+    )
+    code = main(
+        ["run", "--mock", "--script", str(script), "--workspace", str(tmp_path), "task"]
+    )
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "--token=" in out
+    assert "approve: cah approve " in out

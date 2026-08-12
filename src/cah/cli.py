@@ -158,8 +158,9 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
         def resolver(action_id: str, token: str) -> str:
             print(f"  one-time token for {action_id}: {token}", flush=True)
-            print(f"  approve: cah approve {action_id} --token {token}", flush=True)
-            print(f"  reject:  cah reject {action_id} --token {token}", flush=True)
+            # use the `=` form so tokens starting with '-' are parsed correctly
+            print(f"  approve: cah approve {action_id} --token={token}", flush=True)
+            print(f"  reject:  cah reject {action_id} --token={token}", flush=True)
             print("  waiting for your decision...", flush=True)
             return wait_for_decision(
                 action_id,
